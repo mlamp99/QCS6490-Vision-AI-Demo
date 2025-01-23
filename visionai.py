@@ -7,9 +7,9 @@ import threading
 
 import gi
 
-from cam import camThread
-from common import APP_HEADER, TRIA
-from handler import Handler
+from vai.cam import camThread
+from vai.common import APP_HEADER, TRIA
+from vai.handler import Handler
 
 # os.environ["XDG_RUNTIME_DIR"] = "/dev/socket/weston"
 # os.environ["WAYLAND_DISPLAY"] = "wayland-1"

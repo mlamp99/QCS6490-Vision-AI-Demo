@@ -7,8 +7,8 @@ import cv2
 import gi
 import psutil
 
-from cam import camThread
-from common import (
+from .cam import camThread
+from .common import (
     APP_NAME,
     CAMERA,
     CLASSIFICATION,
