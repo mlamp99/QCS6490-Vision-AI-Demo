@@ -1,59 +1,105 @@
+#!/usr/bin/env python3
+
 import os
-import cv2
-import gi
 import re
-import cairo
-import psutil
-import threading
+import signal
 import subprocess
+import sys
+import threading
 from time import sleep, time
 
-os.environ["XDG_RUNTIME_DIR"] = "/run/user/root"
-os.environ["WAYLAND_DISPLAY"] = "wayland-1"
+import cairo
+import cv2
+import gi
+import psutil
 
-os.environ["QMONITOR_BACKEND_LIB_PATH"] = "/var/QualcommProfiler/libs/backends/"
-os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:/var/QualcommProfiler/libs/"
-os.environ["PATH"] = "$PATH:/data/shared/QualcommProfiler/bins"
+#os.environ["XDG_RUNTIME_DIR"] = "/dev/socket/weston"
+#os.environ["WAYLAND_DISPLAY"] = "wayland-1"
+#os.environ["GDK_BACKEND"] = "wayland"
+#os.environ["LC_ALL"] = "en.utf-8"
 
+#os.environ["QMONITOR_BACKEND_LIB_PATH"] = "/var/QualcommProfiler/libs/backends/"
+#os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:/var/QualcommProfiler/libs/"
+#os.environ["PATH"] = "$PATH:/data/shared/QualcommProfiler/bins"
+
+
+# Locks app version, prevents warnings
+gi.require_version('Gdk', '3.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gst, GLib, GObject
+from gi.repository import Gdk, GLib, Gst, Gtk
+
+
+def app_version():
+    """Get the latest tag or commit hash if possible, unknown otherwise"""
+
+    try:
+        version = subprocess.check_output(
+            ["git", "describe", "--tags", "--always"], text=True
+        ).strip()
+
+        return version
+    except subprocess.CalledProcessError:
+        # Handle errors, such as not being in a Git repository
+        return "unknown"
+
+
+APP_NAME = f"QCS6490 Vision AI"
+APP_HEADER = f"{APP_NAME} v({app_version()})"
+
+TRIA = r"""
+████████╗██████╗ ██╗ █████╗ 
+╚══██╔══╝██╔══██╗██║██╔══██╗
+   ██║   ██████╔╝██║███████║
+   ██║   ██╔══██╗██║██╔══██║
+   ██║   ██║  ██║██║██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝
+"""
 
 GladeBuilder = Gtk.Builder()
-appFolder = os.path.dirname(__file__)
-resourceFolder = os.path.join(appFolder, "resources")
-layoutPath = os.path.join(resourceFolder, "GSTLauncher.glade")
+APP_FOLDER = os.path.dirname(__file__)
+RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
+LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
-camera = "gst-launch-1.0 qtiqmmfsrc name=camsrc camera=x ! video/x-raw,format=NV12 ! videoconvert ! video/x-raw,format=BGRA ,width=640,height=480,framerate=30/1 ! appsink drop=1"
+#camera = "gst-launch-1.0 qtiqmmfsrc name=camsrc  ! video/x-raw,format=NV12 ! videoconvert ! video/x-raw,format=BGRA ,width=640,height=480,framerate=30/1 ! appsink drop=1"
+camera = "gst-launch-1.0 camera=x ! videoconvert ! videoscale ! video/x-raw, width=640, height=480, framerate=30/1 ! appsink drop=1"
+
+#pose_detection = "gst-launch-1.0 \
+#camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! queue ! tee name=split \
+#split. ! queue ! qtivcomposer name=mixer ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
+#split. ! queue ! qtimlvconverter ! queue ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
+#model=/opt/posenet_mobilenet_v1.tflite ! queue ! qtimlvpose threshold=51.0 results=2 module=posenet labels=/opt/posenet_mobilenet_v1.labels \
+#constants=Posenet,q-offsets=<128.0,128.0,117.0>,q-scales=<0.0784313753247261,0.0784313753247261,1.3875764608383179>; ! video/x-raw,format=BGRA,width=640,height=360 ! queue ! mixer."
+
 
 pose_detection = "gst-launch-1.0 \
-qtiqmmfsrc name=camsrc camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! queue ! tee name=split \
+camera=x ! qtivtransform ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! \
+tee name=split \
 split. ! queue ! qtivcomposer name=mixer ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
-split. ! queue ! qtimlvconverter ! queue ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
-model=/opt/posenet_mobilenet_v1.tflite ! queue ! qtimlvpose threshold=51.0 results=2 module=posenet labels=/opt/posenet_mobilenet_v1.labels \
+split. ! queue ! qtimlvconverter ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
+model=/opt/posenet_mobilenet_v1.tflite ! qtimlvpose threshold=51.0 results=2 module=posenet labels=/opt/posenet_mobilenet_v1.labels \
 constants=Posenet,q-offsets=<128.0,128.0,117.0>,q-scales=<0.0784313753247261,0.0784313753247261,1.3875764608383179>; ! video/x-raw,format=BGRA,width=640,height=360 ! queue ! mixer."
 
-
 segmentation = "gst-launch-1.0 \
-qtiqmmfsrc name=camsrc camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! queue ! tee name=split \
+camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! queue ! tee name=split \
 split. ! queue ! qtivcomposer name=mixer sink_1::alpha=0.5 ! queue ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
 split. ! queue ! qtimlvconverter ! queue ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
 model=/opt/deeplabv3_resnet50.tflite ! queue ! qtimlvsegmentation module=deeplab-argmax labels=/opt/deeplabv3_resnet50.labels ! video/x-raw,width=256,height=144 ! queue ! mixer."
 
 classification1 = "gst-launch-1.0 \
-qtiqmmfsrc name=camsrc camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \
+camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \
 split. ! queue ! qtivcomposer name=mixer1 ! queue ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
 split. ! queue ! qtimlvconverter ! queue ! qtimlsnpe delegate=dsp model=/opt/inceptionv3.dlc ! queue ! qtimlvclassification threshold=40.0 results=2 module=mobilenet labels=/opt/classification.labels \
 ! video/x-raw,format=BGRA,width=640,height=480 ! queue ! mixer1."
 
 classification = "gst-launch-1.0 \
-qtiqmmfsrc name=camsrc camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \
+camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \
 split. ! queue ! qtivcomposer name=mixer sink_1::position=\"<30,30>\" sink_1::dimensions=\"<320, 180>\" ! queue ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
 split. ! queue ! qtimlvconverter ! queue ! qtimlsnpe delegate=dsp model=/opt/inceptionv3.dlc ! queue ! qtimlvclassification threshold=40.0 results=2 \
 module=mobilenet labels=/opt/classification.labels ! video/x-raw,format=BGRA,width=640,height=360 ! queue ! mixer."
 
 object_detection = "gst-launch-1.0 \
-qtiqmmfsrc name=camsrc camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \
+camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \
 split. ! queue ! qtivcomposer name=mixer1 ! queue ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
 split. ! queue ! qtimlvconverter ! queue ! qtimlsnpe delegate=dsp model=/opt/yolonas.dlc layers=\"</heads/Mul, /heads/Sigmoid>\" ! queue ! qtimlvdetection threshold=51.0 results=10 module=yolo-nas labels=/opt/yolonas.labels \
 ! video/x-raw,format=BGRA,width=640,height=360 ! queue ! mixer1."
@@ -196,14 +242,32 @@ class Handler:
         self.QProf = None
         self.frame0 = None
         self.frame1 = None
-        GLib.timeout_add(100,  self.UpdateLoads)
-        GLib.timeout_add(2000, self.UpdateTemp)
+
+        GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
+        #GObject.timeout_add(100,  self.UpdateLoads)
+        #GObject.timeout_add(2000, self.UpdateTemp)
+
+    def exit(self, payload):
+        """Handle exit signals and clean up resources before exiting the application.
+
+        Due to the threaded nature of the application, this function needs to be carefully linked with Gtk
+        """
+
+        exit_message = f"Exiting {APP_NAME}" + (f" due to {payload}" if payload else "")
+        print(f"\n{exit_message}")
+
+        Gtk.main_quit()
+        # Unclear if Max meant to register the mainWindow destroy function,
+        # but it doesn't appear to be registered right now so call it manually
+        self.on_mainWindow_destroy()
+
+        sys.exit(0)
 
     def UpdateLoads(self):
         GLib.idle_add(self.IdleUpdateLabels, self.CPU_load, '{:.2f}'.format(self.QProf.GetCPU(), 2))
         GLib.idle_add(self.IdleUpdateLabels, self.GPU_load, '{:.2f}'.format(self.QProf.GetGPU(), 2))
         GLib.idle_add(self.IdleUpdateLabels, self.MEM_load, '{:.2f}'.format(self.QProf.GetMEM(), 2))
-        return True        
+        return True
 
     def UpdateTemp(self):
         temps = psutil.sensors_temperatures()
@@ -269,7 +333,8 @@ class Handler:
     def getCommand(self, demoIndex, streamIndex):
         command = self.demoList[demoIndex][:]
         if(streamIndex == 0):
-            command = command.replace('camera=x', 'camera=0')
+            #command = command.replace('camera=x', 'camera=0')
+            command = command.replace('camera=x', 'v4l2src device=/dev/video17')
         else:
             command = command.replace('camera=x', 'camera=1')
 
@@ -308,8 +373,14 @@ class Handler:
         try:
             if self.demoProcess0.frame_available():
                 self.frame0 = self.demoProcess0.frame()
+                
+                self.frame0 = cv2.cvtColor(self.frame0[:,:,::-1], cv2.COLOR_BGR2RGBA)
                 H, W, C = self.frame0.shape
-                surface = cairo.ImageSurface.create_for_data(self.frame0, cairo.FORMAT_ARGB32, W, H)
+
+                # {.. insert code to modify alpha channel here..}
+                surface = cairo.ImageSurface.create_for_data(self.frame0, cairo.FORMAT_ARGB32, W, H)                
+                
+                #surface = cairo.ImageSurface.create_for_data(self.frame0, cairo.FORMAT_ARGB32, W, H)
                 CWidth = widget.get_allocation().width
                 CHeight = widget.get_allocation().height
 
@@ -321,9 +392,9 @@ class Handler:
                 context.scale(frameScale, frameScale)
                 context.set_source_surface(surface, ((CWidth/frameScale) - W)/2,  ((CHeight/frameScale) - H)/2)
                 context.paint()
-            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate0, "FPS: "+str(self.demoProcess0.FPSAvarage()))
+            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate0, str(self.demoProcess0.FPSAvarage()))
         except: 
-            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate0, "FPS: 0")
+            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate0, "0")
             pass
         widget.queue_draw()
 
@@ -344,34 +415,35 @@ class Handler:
                 context.scale(frameScale, frameScale)
                 context.set_source_surface(surface, ((CWidth/frameScale) - W)/2,  ((CHeight/frameScale) - H)/2)
                 context.paint()
-            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate1, "FPS: "+str(self.demoProcess1.FPSAvarage()))
+            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate1, str(self.demoProcess1.FPSAvarage()))
         except: 
-            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate1, "FPS: 0")
+            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate1, "0")
             pass
         widget.queue_draw()
         
-class Video():                   
+class Video():
     def __init__(self, port=7001):
         Gst.init(None)
 
         self.eventHandler = Handler()
         self.running = True
 
-        self.loaclAppThread = threading.Thread(target=self.localApp)
-        self.loaclAppThread.start()
+        self.localAppThread = threading.Thread(target=self.localApp)
+        self.localAppThread.start()
 
     def localApp(self):
         global GladeBuilder
 
-        GladeBuilder.add_from_file(layoutPath)
+        GladeBuilder.add_from_file(LAYOUT_PATH)
         GladeBuilder.connect_signals(self.eventHandler)
 
         screen = Gdk.Screen.get_default()
         provider = Gtk.CssProvider()
-        provider.load_from_path(os.path.join(resourceFolder, "app.css"))
+        provider.load_from_path(os.path.join(RESOURCE_FOLDER, "app.css"))
         Gtk.StyleContext.add_provider_for_screen(screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
         self.eventHandler.MainWindow = GladeBuilder.get_object("mainWindow")
+        self.eventHandler.MainWindow.connect("destroy", self.eventHandler.exit)
         self.eventHandler.aboutWindow = GladeBuilder.get_object("aboutWindow")
         self.eventHandler.FPSRate0 = GladeBuilder.get_object("FPS_rate_0")
         self.eventHandler.FPSRate1 = GladeBuilder.get_object("FPS_rate_1")
@@ -390,19 +462,21 @@ class Video():
         self.eventHandler.MainWindow.fullscreen()
         self.eventHandler.MainWindow.show_all()
 
-        self.eventHandler.demoProcess0.start()
-        while self.eventHandler.demoProcess0.FrameOk == False:
-            sleep(0.1)
+        #self.eventHandler.demoProcess0.start()
+        #while self.eventHandler.demoProcess0.FrameOk == False:
+        #    sleep(0.1)
 
-        self.eventHandler.demoProcess1.start()
-        while self.eventHandler.demoProcess1.FrameOk == False:
-            sleep(0.1)
+        #self.eventHandler.demoProcess1.start()
+        #while self.eventHandler.demoProcess1.FrameOk == False:
+        #    sleep(0.1)
 
-        self.eventHandler.QProf.start()
+        #self.eventHandler.QProf.start()
 
         Gtk.main()
                           
 if __name__ == '__main__':
+    print(TRIA)
+    print(f"\nLaunching {APP_HEADER}")
     # Create the video object
     # Add port= if is necessary to use a different one
     video = Video()
