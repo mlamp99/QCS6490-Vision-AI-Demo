@@ -9,8 +9,15 @@ import gi
 import psutil
 
 from .cam import camThread
-from .common import (APP_NAME, CAMERA, CLASSIFICATION, DEFAULT_DISPLAY,
-                     OBJECT_DETECTION, POSE_DETECTION, SEGMENTATION)
+from .common import (
+    APP_NAME,
+    CAMERA,
+    CLASSIFICATION,
+    DEFAULT_DISPLAY,
+    OBJECT_DETECTION,
+    POSE_DETECTION,
+    SEGMENTATION,
+)
 
 # Locks app version, prevents warnings
 gi.require_version("Gtk", "3.0")
@@ -39,7 +46,9 @@ class Handler:
         self.DrawArea1_h = 480
         self.display_fps_metrics = display_fps_metrics
 
-        print("Pulling CAM1 and CAM2 from ENV; defaulting to /dev/video0 and /dev/video1 if not set.")
+        print(
+            "Pulling CAM1 and CAM2 from ENV; defaulting to /dev/video0 and /dev/video1 if not set."
+        )
         self.cam1 = os.environ.get("CAM1", "/dev/video0")
         self.cam2 = os.environ.get("CAM2", "/dev/video1")
         print(f"Using CAM1: {self.cam1} and CAM2: {self.cam2}")
@@ -171,7 +180,6 @@ class Handler:
 
         command = self.demoList[demoIndex][:]
         command = self._modify_command_pipeline(command)
-        
 
         if streamIndex == 0:
             allocation = self.DrawArea1.get_allocation()
@@ -198,7 +206,6 @@ class Handler:
             sleep(1)
 
         index = combo.get_active()
-        self.demoProcess0.close()
         if index == 0:
             self.demoProcess0 = None
         else:
