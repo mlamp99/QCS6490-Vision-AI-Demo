@@ -12,7 +12,7 @@ split. ! queue ! qtimlvconverter ! qtimltflite delegate=external external-delega
 model=/opt/posenet_mobilenet_v1.tflite ! qtimlvpose threshold=51.0 results=2 module=posenet labels=/opt/posenet_mobilenet_v1.labels \
 constants=Posenet,q-offsets=<128.0,128.0,117.0>,q-scales=<0.0784313753247261,0.0784313753247261,1.3875764608383179>; ! video/x-raw,format=BGRA,width=640,height=480 ! mixer."
 
-SEGMENTATION = "<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! tee name=split \
+SEGMENTATION = "<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=360,framerate=30/1,compression=ubwc ! tee name=split \
 split. ! queue ! qtivcomposer name=mixer sink_1::alpha=0.5 ! queue ! <DISPLAY> \
 split. ! queue ! qtimlvconverter ! queue ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
 model=/opt/deeplabv3_resnet50.tflite ! queue ! qtimlvsegmentation module=deeplab-argmax labels=/opt/deeplabv3_resnet50.labels ! video/x-raw,width=256,height=144 ! queue ! mixer."
@@ -47,8 +47,11 @@ def app_version():
         version = subprocess.check_output(
             ["git", "describe", "--tags", "--always"], text=True
         ).strip()
+        date = subprocess.check_output(
+            ["git", "log", "-1", "--format=%cd", "--date=short"], text=True
+        ).strip()
 
-        return version
+        return f"{version} {date}"
     except subprocess.CalledProcessError:
         # Handle errors, such as not being in a Git repository
         return "unknown"
