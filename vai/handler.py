@@ -12,6 +12,7 @@ from .common import (
     APP_NAME,
     CAMERA,
     CLASSIFICATION,
+    DEFAULT_DISPLAY,
     OBJECT_DETECTION,
     POSE_DETECTION,
     SEGMENTATION,
@@ -24,7 +25,7 @@ from gi.repository import GLib, Gtk
 
 
 class Handler:
-    def __init__(self):
+    def __init__(self, display_fps_metrics=True):
         self.demoList = [
             None,
             CAMERA,
@@ -42,6 +43,7 @@ class Handler:
         self.DrawArea1_y = 0
         self.DrawArea1_w = 640
         self.DrawArea1_h = 480
+        self.display_fps_metrics = display_fps_metrics
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
         # GObject.timeout_add(100,  self.UpdateLoads)
@@ -148,6 +150,19 @@ class Handler:
 
         Gtk.main_quit(*args)
 
+    def _modify_command_pipeline(self, command):
+        if self.display_fps_metrics:
+            command = command.replace(
+                "<DISPLAY>",
+                f'fpsdisplaysink text-overlay=true video-sink="{DEFAULT_DISPLAY}"',
+            )
+        else:
+            command = command.replace(
+                "<DISPLAY>",
+                DEFAULT_DISPLAY,
+            )
+        return command
+
     def getCommand(self, demoIndex, streamIndex):
         allocation = self.DrawArea1.get_allocation()
         self.DrawArea1_x = allocation.x
@@ -156,22 +171,23 @@ class Handler:
         self.DrawArea1_h = allocation.height
 
         command = self.demoList[demoIndex][:]
+        command = self._modify_command_pipeline(command)
+
         if streamIndex == 0:
             allocation = self.DrawArea1.get_allocation()
             self.DrawArea1_x = allocation.x
-            self.DrawArea1_y = allocation.y+17
+            self.DrawArea1_y = allocation.y + 17
             self.DrawArea1_w = allocation.width
-            self.DrawArea1_h = allocation.height+18
+            self.DrawArea1_h = allocation.height + 18
 
-            # command = command.replace('camera=x', 'camera=0')
-            command = command.replace("camera=x", "v4l2src device=/dev/video17")
-            command = command.replace("x=10 y=50 width=640 height=480", 
-                                      "x="+str(self.DrawArea1_x)+
-                                      " y="+str(self.DrawArea1_y)+
-                                      " width="+str(self.DrawArea1_w)+
-                                      " height="+str(self.DrawArea1_h))
+            # command = command.replace('<DATA_SRC>', 'camera=0')
+            command = command.replace("<DATA_SRC>", "v4l2src device=/dev/video17")
+            command = command.replace(
+                "x=10 y=50 width=640 height=480",
+                f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={self.DrawArea1_w} height={self.DrawArea1_h}",
+            )
         else:
-            command = command.replace("camera=x", "camera=1")
+            command = command.replace("<DATA_SRC>", "camera=1")
 
         return command
 
