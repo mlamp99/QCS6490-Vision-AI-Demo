@@ -32,19 +32,6 @@ APP_FOLDER = os.path.dirname(__file__)
 RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
 LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
-# camera = "gst-launch-1.0 qtiqmmfsrc name=camsrc  ! video/x-raw,format=NV12 ! videoconvert ! video/x-raw,format=BGRA ,width=640,height=480,framerate=30/1 ! appsink drop=1"
-
-# pose_detection = "gst-launch-1.0 \
-# camera=x ! video/x-raw\(memory:GBM\),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! queue ! tee name=split \
-# split. ! queue ! qtivcomposer name=mixer ! videoconvert ! video/x-raw,format=BGRA ! appsink drop=1 \
-# split. ! queue ! qtimlvconverter ! queue ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
-# model=/opt/posenet_mobilenet_v1.tflite ! queue ! qtimlvpose threshold=51.0 results=2 module=posenet labels=/opt/posenet_mobilenet_v1.labels \
-# constants=Posenet,q-offsets=<128.0,128.0,117.0>,q-scales=<0.0784313753247261,0.0784313753247261,1.3875764608383179>; ! video/x-raw,format=BGRA,width=640,height=360 ! queue ! mixer."
-
-
-# gst-launch-1.0 qtiqmmfsrc name=camsrc ! "video/x-raw, width=640, height=480, framerate=(fraction)30/1" ! fpsdisplaysink sync=false video-sink="autovideosink" -v
-
-
 def index_containing_substring(the_list, substring):
     for i, s in enumerate(the_list):
         if substring in s:
@@ -155,12 +142,23 @@ class Video:
         self.eventHandler.CPU_temp = GladeBuilder.get_object("CPU_temp")
         self.eventHandler.GPU_temp = GladeBuilder.get_object("GPU_temp")
         self.eventHandler.MEM_temp = GladeBuilder.get_object("MEM_temp")
+        self.eventHandler.TopBox = GladeBuilder.get_object("TopBox")
+        self.eventHandler.BottomBox = GladeBuilder.get_object("BottomBox")
+        self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
+        self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
 
         self.eventHandler.demoProcess0 = camThread(self.eventHandler.getCommand(1, 0))
         self.eventHandler.demoProcess1 = camThread(self.eventHandler.getCommand(1, 1))
         self.eventHandler.QProf = QProfProcess()
 
-        self.eventHandler.MainWindow.fullscreen()
+        # Enable transparency on main window except for top and bottom boxes
+        self.eventHandler.MainWindow.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(23/255, 23/255, 23/255, 0))
+        self.eventHandler.TopBox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(23/255,23/255,23/255,1))
+        self.eventHandler.BottomBox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(23/255,23/255,23/255,1))
+
+        self.eventHandler.MainWindow.set_decorated(False)
+        self.eventHandler.MainWindow.set_keep_below(True)
+        self.eventHandler.MainWindow.maximize()
         self.eventHandler.MainWindow.show_all()
 
         # self.eventHandler.demoProcess0.start()

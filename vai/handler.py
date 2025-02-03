@@ -38,6 +38,10 @@ class Handler:
         self.QProf = None
         self.frame0 = None
         self.frame1 = None
+        self.DrawArea1_x = 0
+        self.DrawArea1_y = 0
+        self.DrawArea1_w = 640
+        self.DrawArea1_h = 480
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
         # GObject.timeout_add(100,  self.UpdateLoads)
@@ -145,10 +149,27 @@ class Handler:
         Gtk.main_quit(*args)
 
     def getCommand(self, demoIndex, streamIndex):
+        allocation = self.DrawArea1.get_allocation()
+        self.DrawArea1_x = allocation.x
+        self.DrawArea1_y = allocation.y
+        self.DrawArea1_w = allocation.width
+        self.DrawArea1_h = allocation.height
+
         command = self.demoList[demoIndex][:]
         if streamIndex == 0:
+            allocation = self.DrawArea1.get_allocation()
+            self.DrawArea1_x = allocation.x
+            self.DrawArea1_y = allocation.y+17
+            self.DrawArea1_w = allocation.width
+            self.DrawArea1_h = allocation.height+18
+
             # command = command.replace('camera=x', 'camera=0')
             command = command.replace("camera=x", "v4l2src device=/dev/video17")
+            command = command.replace("x=10 y=50 width=640 height=480", 
+                                      "x="+str(self.DrawArea1_x)+
+                                      " y="+str(self.DrawArea1_y)+
+                                      " width="+str(self.DrawArea1_w)+
+                                      " height="+str(self.DrawArea1_h))
         else:
             command = command.replace("camera=x", "camera=1")
 
@@ -161,6 +182,7 @@ class Handler:
             sleep(1)
 
         index = combo.get_active()
+        self.demoProcess0.close()
         if index == 0:
             self.demoProcess0 = None
         else:

@@ -2,6 +2,9 @@ import threading
 from time import time
 
 import cv2
+import gi 
+gi.require_version('Gst', '1.0')
+from gi.repository import Gst, GLib
 
 
 class camThread(threading.Thread):
@@ -17,16 +20,48 @@ class camThread(threading.Thread):
         self.FPStime = 0
         self.FPSAve = 0.0
 
+        self.loop = GLib.MainLoop()
+        self.pipeline = None
+        self.bus = None
+
+    def on_message(bus, message, loop):
+        if message.type == Gst.MessageType.EOS:
+            loop.quit()
+        elif message.type == Gst.MessageType.ERROR:
+            err, debug = message.parse_error()
+            print("Error:", err, debug)
+            loop.quit()
+        elif message.type == Gst.MessageType.ELEMENT:
+            struct = message.get_structure()
+            if struct.has_name("GstStreamStats"):
+                fps = struct.get_double("framerate")
+                print("FPS:", fps)
+
     def camPreview(self, camID):
         self.enabled = True
-        self.cam = cv2.VideoCapture(camID, cv2.CAP_GSTREAMER)
-        if self.cam.isOpened():  # try to get the first frame
-            self.FrameOk, self.Frame = self.cam.read()
-        else:
-            self.FrameOk = False
+        #self.cam = cv2.VideoCapture(camID, cv2.CAP_GSTREAMER)
+        #if self.cam.isOpened():  # try to get the first frame
+        #    self.FrameOk, self.Frame = self.cam.read()
+        #else:
+        #    self.FrameOk = False
+
+        self.pipeline = Gst.parse_launch(camID)
+        self.bus = self.pipeline.get_bus()      
+        #self.pipeline.set_state(Gst.State.PLAYING)
+
+        
+        self.bus.connect("message", self.on_message, self.loop)
+        self.pipeline.set_state(Gst.State.PLAYING)
 
         while self.enabled:
-            self.FrameOk, self.Frame = self.cam.read()
+            msg = self.bus.timed_pop_filtered(1000000000, Gst.MessageType.ANY)
+            if msg:
+                if msg.type == Gst.MessageType.ELEMENT:
+                    struct = msg.get_structure()
+                    if struct.has_name("fps-measurements"):
+                        fps = struct.get_value("fps")
+                        print("FPS:", fps)
+            #self.FrameOk, self.Frame = self.cam.read()
 
             try:
                 if self.FrameOk:
@@ -47,6 +82,8 @@ class camThread(threading.Thread):
     def close(self):
         if self.cam is not None:
             self.cam.release()
+        if self.pipeline is not None:
+            self.pipeline.set_state(Gst.State.NULL)
         self.enabled = False
         self.Frame = None
 
