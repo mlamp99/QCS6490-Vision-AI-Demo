@@ -41,6 +41,9 @@
       <row>
         <col id="0">Object detection</col>
       </row>
+      <row>
+        <col id="0">Depth Segmentation</col>
+      </row>
     </data>
   </object>
   <object class="GtkWindow" id="mainWindow">

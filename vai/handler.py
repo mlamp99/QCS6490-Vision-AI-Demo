@@ -13,7 +13,9 @@ from .common import (
     APP_NAME,
     CAMERA,
     CLASSIFICATION,
-    DEFAULT_DISPLAY,
+    DEFAULT_DUAL_WINDOW,
+    DEFAULT_LEFT_WINDOW,
+    DEPTH_SEGMENTATION,
     OBJECT_DETECTION,
     POSE_DETECTION,
     SEGMENTATION,
@@ -34,6 +36,7 @@ class Handler:
             SEGMENTATION,
             CLASSIFICATION,
             OBJECT_DETECTION,
+            DEPTH_SEGMENTATION,
         ]
         self.demoProcess0 = None
         self.demoProcess1 = None
@@ -159,16 +162,23 @@ class Handler:
         Gtk.main_quit(*args)
 
     def _modify_command_pipeline(self, command):
-        if self.display_fps_metrics:
-            command = command.replace(
-                "<DISPLAY>",
-                f'fpsdisplaysink text-overlay=true video-sink="{DEFAULT_DISPLAY}"',
-            )
-        else:
-            command = command.replace(
-                "<DISPLAY>",
-                DEFAULT_DISPLAY,
-            )
+
+        # TODO: support l/r windows through parameterization or other technique
+        displaysink_text = (
+            "fpsdisplaysink text-overlay=true video-sink="
+            if self.display_fps_metrics
+            else ""
+        )
+
+        # NOTE: if fpsdisplaysink is used, the video-sink property needs wrapped; "" does that
+        command = command.replace(
+            "<SINGLE_DISPLAY>",
+            f'{displaysink_text}"{DEFAULT_LEFT_WINDOW}"',
+        )
+        command = command.replace(
+            "<DUAL_DISPLAY>",
+            f'{displaysink_text}"{DEFAULT_DUAL_WINDOW}"',
+        )
         return command
 
     def getCommand(self, demoIndex, streamIndex):
@@ -190,13 +200,20 @@ class Handler:
 
             # command = command.replace('<DATA_SRC>', 'camera=0')
             command = command.replace("<DATA_SRC>", f"v4l2src device={self.cam1}")
+            # TODO: remove these nasty position replacements with something more obvious
             command = command.replace(
                 "x=10 y=50 width=640 height=480",
                 f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={self.DrawArea1_w} height={self.DrawArea1_h}",
             )
+            command = command.replace(
+                "<DUAL_WINDOW_XY>",
+                f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={2*self.DrawArea1_w} height={self.DrawArea1_h}",
+            )
         else:
             command = command.replace("<DATA_SRC>", "camera=1")
 
+        print(command)
+        print((self.DrawArea1_x, self.DrawArea1_y, self.DrawArea1_w, self.DrawArea1_h))
         return command
 
     def demo0_selection_changed_cb(self, combo):
