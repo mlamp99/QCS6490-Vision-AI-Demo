@@ -148,8 +148,8 @@ class Video:
         self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
         self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
 
-        self.eventHandler.demoProcess0 = camThread(self.eventHandler.getCommand(1, 0))
-        self.eventHandler.demoProcess1 = camThread(self.eventHandler.getCommand(1, 1))
+        # self.eventHandler.demoProcess0 = camThread(self.eventHandler.getCommand(1, 0))
+        # self.eventHandler.demoProcess1 = camThread(self.eventHandler.getCommand(1, 1))
         self.eventHandler.QProf = QProfProcess()
 
         # Enable transparency on main window except for top and bottom boxes

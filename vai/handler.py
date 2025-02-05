@@ -29,6 +29,8 @@ from gi.repository import GLib, Gtk
 # Tuning variable to adjust the height of the video display
 HEIGHT_OFFSET = 17
 
+DUAL_WINDOW_DEMOS = ["depth segmentation"]
+
 
 class Handler:
     def __init__(self, display_fps_metrics=True):
@@ -171,6 +173,7 @@ class Handler:
         Gtk.main_quit(*args)
 
     def _modify_command_pipeline(self, command, stream_index):
+        """Modify GST pipeline by replacing placeholders with runtime values."""
 
         # TODO: support l/r windows through parameterization or other technique
         displaysink_text = (
@@ -194,29 +197,26 @@ class Handler:
             "<DATA_SRC>",
             f"v4l2src device={self.cam1 if stream_index == 0 else self.cam2}",
         )
-        if stream_index == 0:
-            # TODO: remove these nasty position replacements with something more obvious
-            command = command.replace(
-                "x=10 y=50 width=640 height=480",
-                f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={self.DrawArea1_w} height={self.DrawArea1_h}",
-            )
-            # TODO: if dual window is enabled, we need to terminate other window
-            command = command.replace(
-                "<DUAL_WINDOW_XY>",
-                f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={2*self.DrawArea1_w} height={self.DrawArea1_h}",
-            )
-        else:
-            command = command.replace(
-                "x=10 y=50 width=640 height=480",
-                f"x={self.DrawArea2_x} y={self.DrawArea2_y} width={self.DrawArea2_w} height={self.DrawArea2_h}",
-            )
+        # TODO: use rect instead of x/y/width/height ?
+        x = self.DrawArea1_x if stream_index == 0 else self.DrawArea2_x
+        y = self.DrawArea1_y if stream_index == 0 else self.DrawArea2_y
+        w = self.DrawArea1_w if stream_index == 0 else self.DrawArea2_w
+        h = self.DrawArea1_h if stream_index == 0 else self.DrawArea2_h
+        command = command.replace(
+            "x=10 y=50 width=640 height=480",
+            f"x={x} y={y} width={w} height={h}",
+        )
+        # WARN: Stream index doesnt matter here. Its essential the dual window starts at drawarea1 and is 2*w wide
+        command = command.replace(
+            "<DUAL_WINDOW_XY>",
+            f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={2*self.DrawArea1_w} height={self.DrawArea1_h}",
+        )
         return command
 
     def update_window_allocations(self):
         """Dynamically determine the size and position of the video windows based on the current GUI partitioning."""
         if not self.allocated_sizes:
             # TODO: Pull up allocation/sizing to previous function closer to init
-            self.update_window_allocations()
             allocation = self.DrawArea1.get_allocation()
             self.DrawArea1_x = allocation.x
             self.DrawArea1_y = allocation.y + HEIGHT_OFFSET
@@ -231,22 +231,32 @@ class Handler:
 
             self.allocated_sizes = True
 
-    def getCommand(self, demoIndex, streamIndex):
+    def getCommand(self, demoIndex, stream_index):
         self.update_window_allocations()
+        # TODO: just use combo.get_active_id() instead of index. Then map into demo directly
         command = self.demoList[demoIndex][:]
-        command = self._modify_command_pipeline(command)
-
-        print(command)
-        print((self.DrawArea1_x, self.DrawArea1_y, self.DrawArea1_w, self.DrawArea1_h))
-        print((self.DrawArea2_x, self.DrawArea2_y, self.DrawArea2_w, self.DrawArea2_h))
+        command = self._modify_command_pipeline(command, stream_index)
         return command
 
-    def demo0_selection_changed_cb(self, combo):
-        if self.demoProcess0 is not None:
-            # end previous process
-            self.demoProcess0.close()
-            sleep(1)
+    def kill_demos(self, demo_process, demo_selection_combo):
+        """Kill the demo process if it is running. Might have to kill multiple demos depending up next queued demo."""
 
+        demo = demo_selection_combo.get_active_id()
+        kill0 = True if demo_process == 0 else False
+        kill1 = True if demo_process == 1 else False
+        if demo.lower() in DUAL_WINDOW_DEMOS:
+            kill0 = True
+            kill1 = True
+
+        if kill0 and self.demoProcess0 is not None:
+            self.demoProcess0.close()
+        if kill1 and self.demoProcess1 is not None:
+            self.demoProcess1.close()
+        sleep(0.5)
+
+    def demo0_selection_changed_cb(self, combo):
+        """Signal handler for the 1st demo selection combo box."""
+        self.kill_demos(0, combo)
         index = combo.get_active()
         if index == 0:
             self.demoProcess0 = None
@@ -255,11 +265,8 @@ class Handler:
             self.demoProcess0.start()
 
     def demo1_selection_changed_cb(self, combo):
-        if self.demoProcess1 is not None:
-            # end previous process
-            self.demoProcess1.close()
-            sleep(1)
-
+        """Signal handler for the 2nd demo selection combo box."""
+        self.kill_demos(1, combo)
         index = combo.get_active()
         if index == 0:
             self.demoProcess1 = None
