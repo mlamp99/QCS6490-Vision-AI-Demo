@@ -26,6 +26,9 @@ gi.require_version("Gtk", "3.0")
 
 from gi.repository import GLib, Gtk
 
+# Tuning variable to adjust the height of the video display
+HEIGHT_OFFSET = 17
+
 
 class Handler:
     def __init__(self, display_fps_metrics=True):
@@ -43,10 +46,16 @@ class Handler:
         self.QProf = None
         self.frame0 = None
         self.frame1 = None
-        self.DrawArea1_x = 0
-        self.DrawArea1_y = 0
-        self.DrawArea1_w = 640
-        self.DrawArea1_h = 480
+        # These values should be determined by GUI's allocation (IE glade's config)
+        self.allocated_sizes = False
+        self.DrawArea1_x = None
+        self.DrawArea1_y = None
+        self.DrawArea1_w = None
+        self.DrawArea1_h = None
+        self.DrawArea2_x = None
+        self.DrawArea2_y = None
+        self.DrawArea2_w = None
+        self.DrawArea2_h = None
         self.display_fps_metrics = display_fps_metrics
 
         print(
@@ -161,7 +170,7 @@ class Handler:
 
         Gtk.main_quit(*args)
 
-    def _modify_command_pipeline(self, command):
+    def _modify_command_pipeline(self, command, stream_index):
 
         # TODO: support l/r windows through parameterization or other technique
         displaysink_text = (
@@ -179,41 +188,57 @@ class Handler:
             "<DUAL_DISPLAY>",
             f'{displaysink_text}"{DEFAULT_DUAL_WINDOW}"',
         )
-        return command
 
-    def getCommand(self, demoIndex, streamIndex):
-        allocation = self.DrawArea1.get_allocation()
-        self.DrawArea1_x = allocation.x
-        self.DrawArea1_y = allocation.y
-        self.DrawArea1_w = allocation.width
-        self.DrawArea1_h = allocation.height
-
-        command = self.demoList[demoIndex][:]
-        command = self._modify_command_pipeline(command)
-
-        if streamIndex == 0:
-            allocation = self.DrawArea1.get_allocation()
-            self.DrawArea1_x = allocation.x
-            self.DrawArea1_y = allocation.y + 17
-            self.DrawArea1_w = allocation.width
-            self.DrawArea1_h = allocation.height + 18
-
-            # command = command.replace('<DATA_SRC>', 'camera=0')
-            command = command.replace("<DATA_SRC>", f"v4l2src device={self.cam1}")
+        # TODO: If we do file processing, we'll need to support that around here
+        command = command.replace(
+            "<DATA_SRC>",
+            f"v4l2src device={self.cam1 if stream_index == 0 else self.cam2}",
+        )
+        if stream_index == 0:
             # TODO: remove these nasty position replacements with something more obvious
             command = command.replace(
                 "x=10 y=50 width=640 height=480",
                 f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={self.DrawArea1_w} height={self.DrawArea1_h}",
             )
+            # TODO: if dual window is enabled, we need to terminate other window
             command = command.replace(
                 "<DUAL_WINDOW_XY>",
                 f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={2*self.DrawArea1_w} height={self.DrawArea1_h}",
             )
         else:
-            command = command.replace("<DATA_SRC>", "camera=1")
+            command = command.replace(
+                "x=10 y=50 width=640 height=480",
+                f"x={self.DrawArea2_x} y={self.DrawArea2_y} width={self.DrawArea2_w} height={self.DrawArea2_h}",
+            )
+        return command
+
+    def update_window_allocations(self):
+        """Dynamically determine the size and position of the video windows based on the current GUI partitioning."""
+        if not self.allocated_sizes:
+            # TODO: Pull up allocation/sizing to previous function closer to init
+            self.update_window_allocations()
+            allocation = self.DrawArea1.get_allocation()
+            self.DrawArea1_x = allocation.x
+            self.DrawArea1_y = allocation.y + HEIGHT_OFFSET
+            self.DrawArea1_w = allocation.width
+            self.DrawArea1_h = allocation.height + HEIGHT_OFFSET
+
+            allocation = self.DrawArea2.get_allocation()
+            self.DrawArea2_x = allocation.x
+            self.DrawArea2_y = allocation.y + HEIGHT_OFFSET
+            self.DrawArea2_w = allocation.width
+            self.DrawArea2_h = allocation.height + HEIGHT_OFFSET
+
+            self.allocated_sizes = True
+
+    def getCommand(self, demoIndex, streamIndex):
+        self.update_window_allocations()
+        command = self.demoList[demoIndex][:]
+        command = self._modify_command_pipeline(command)
 
         print(command)
         print((self.DrawArea1_x, self.DrawArea1_y, self.DrawArea1_w, self.DrawArea1_h))
+        print((self.DrawArea2_x, self.DrawArea2_y, self.DrawArea2_w, self.DrawArea2_h))
         return command
 
     def demo0_selection_changed_cb(self, combo):

@@ -32,6 +32,7 @@ APP_FOLDER = os.path.dirname(__file__)
 RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
 LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
+
 def index_containing_substring(the_list, substring):
     for i, s in enumerate(the_list):
         if substring in s:
@@ -152,9 +153,15 @@ class Video:
         self.eventHandler.QProf = QProfProcess()
 
         # Enable transparency on main window except for top and bottom boxes
-        self.eventHandler.MainWindow.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(23/255, 23/255, 23/255, 0))
-        self.eventHandler.TopBox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(23/255,23/255,23/255,1))
-        self.eventHandler.BottomBox.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(23/255,23/255,23/255,1))
+        self.eventHandler.MainWindow.override_background_color(
+            Gtk.StateFlags.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0)
+        )
+        self.eventHandler.TopBox.override_background_color(
+            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 1)
+        )
+        self.eventHandler.BottomBox.override_background_color(
+            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 1)
+        )
 
         self.eventHandler.MainWindow.set_decorated(False)
         self.eventHandler.MainWindow.set_keep_below(True)

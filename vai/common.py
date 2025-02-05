@@ -7,11 +7,9 @@ import subprocess
 DEFAULT_LEFT_WINDOW = "waylandsink x=10 y=50 width=640 height=480 async=true sync=false"
 
 DEFAULT_DUAL_WINDOW = "waylandsink async=true sync=false <DUAL_WINDOW_XY>"
-# DEFAULT_DUAL_WINDOW = (
-# "waylandsink async=true sync=false <DUAL_WINDOW_XY> width=1920 height=540"
-# )
 
 # TODO: add FPS support for camera
+# TODO: What is the most reasonable res?
 CAMERA = f"<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! {DEFAULT_LEFT_WINDOW}"
 
 POSE_DETECTION = "<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! tee name=split \
