@@ -323,7 +323,6 @@ Development Kit</property>
                     <property name="name">DrawArea1</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <signal name="draw" handler="CapImage_event1" swapped="yes"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -336,7 +335,6 @@ Development Kit</property>
                     <property name="name">DrawArea2</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <signal name="draw" handler="CapImage_event2" swapped="yes"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
