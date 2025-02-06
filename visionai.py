@@ -152,15 +152,15 @@ class Video:
         # self.eventHandler.demoProcess1 = camThread(self.eventHandler.getCommand(1, 1))
         self.eventHandler.QProf = QProfProcess()
 
-        # Enable transparency on main window except for top and bottom boxes
+        # TODO: Can just put these in CSS
         self.eventHandler.MainWindow.override_background_color(
             Gtk.StateFlags.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0)
         )
         self.eventHandler.TopBox.override_background_color(
-            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 1)
+            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0.5)
         )
         self.eventHandler.BottomBox.override_background_color(
-            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 1)
+            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0.5)
         )
 
         self.eventHandler.MainWindow.set_decorated(False)

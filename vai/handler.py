@@ -1,10 +1,8 @@
-import os
 import signal
+import subprocess
 import sys
 from time import sleep
 
-import cairo
-import cv2
 import gi
 import psutil
 
@@ -59,17 +57,34 @@ class Handler:
         self.DrawArea2_w = None
         self.DrawArea2_h = None
         self.display_fps_metrics = display_fps_metrics
+        self.USBCameras = []
 
-        print(
-            "Pulling CAM1 and CAM2 from ENV; defaulting to /dev/video0 and /dev/video1 if not set."
-        )
-        self.cam1 = os.environ.get("CAM1", "/dev/video0")
-        self.cam2 = os.environ.get("CAM2", "/dev/video1")
-        print(f"Using CAM1: {self.cam1} and CAM2: {self.cam2}")
+        # TODO: scan_for_connected_cameras() to include MIPI
+        self.USBCameraCount = self.scan_for_connected_usb_cameras()
+        self.cam1 = self.USBCameras[0][1] if self.USBCameraCount > 0 else None
+        self.cam2 = self.USBCameras[1][1] if self.USBCameraCount > 1 else None
+
+        print(f"Using CAM1: {self.cam1}")
+        print(f"Using CAM2: {self.cam2}")
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
         # GObject.timeout_add(100,  self.UpdateLoads)
         # GObject.timeout_add(2000, self.UpdateTemp)
+
+    def scan_for_connected_usb_cameras(self):
+        """Scans for cameras via v4l"""
+
+        output = subprocess.check_output(["ls", "/dev/v4l/by-id"])
+        device_id = -1
+        for device_info in output.decode().splitlines():
+            # By testing, video-index0 is the camera capable of video streaming
+            if "video-index0" in device_info:
+                device_id = device_id + 1
+                self.USBCameras.append(
+                    ("USB CAM" + str(device_id), "/dev/v4l/by-id/" + device_info)
+                )
+
+        return len(self.USBCameras)
 
     def exit(self, payload):
         """Handle exit signals and clean up resources before exiting the application.
@@ -277,74 +292,9 @@ class Handler:
     def IdleUpdateLabels(self, label, text):
         label.set_text(text)
 
+    # TODO: Verify then delete CapImage calls
     def CapImage_event1(self, widget, context):
-        try:
-            if self.demoProcess0.frame_available():
-                self.frame0 = self.demoProcess0.frame()
-
-                self.frame0 = cv2.cvtColor(self.frame0[:, :, ::-1], cv2.COLOR_BGR2RGBA)
-                H, W, C = self.frame0.shape
-
-                # {.. insert code to modify alpha channel here..}
-                surface = cairo.ImageSurface.create_for_data(
-                    self.frame0, cairo.FORMAT_ARGB32, W, H
-                )
-
-                # surface = cairo.ImageSurface.create_for_data(self.frame0, cairo.FORMAT_ARGB32, W, H)
-                CWidth = widget.get_allocation().width
-                CHeight = widget.get_allocation().height
-
-                if CHeight / H < CWidth / W:
-                    frameScale = CHeight / H
-                else:
-                    frameScale = CWidth / W
-
-                context.scale(frameScale, frameScale)
-                context.set_source_surface(
-                    surface,
-                    ((CWidth / frameScale) - W) / 2,
-                    ((CHeight / frameScale) - H) / 2,
-                )
-                context.paint()
-            GLib.idle_add(
-                self.IdleUpdateLabels,
-                self.FPSRate0,
-                str(self.demoProcess0.FPSAvarage()),
-            )
-        except:
-            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate0, "0")
-            pass
-        widget.queue_draw()
+        raise RuntimeError("This function is not needed in the current implementation")
 
     def CapImage_event2(self, widget, context):
-        try:
-            if self.demoProcess1.frame_available():
-                self.frame1 = self.demoProcess1.frame()
-                H, W, C = self.frame1.shape
-                surface = cairo.ImageSurface.create_for_data(
-                    self.frame1, cairo.FORMAT_ARGB32, W, H
-                )
-                CWidth = widget.get_allocation().width
-                CHeight = widget.get_allocation().height
-
-                if CHeight / H < CWidth / W:
-                    frameScale = CHeight / H
-                else:
-                    frameScale = CWidth / W
-
-                context.scale(frameScale, frameScale)
-                context.set_source_surface(
-                    surface,
-                    ((CWidth / frameScale) - W) / 2,
-                    ((CHeight / frameScale) - H) / 2,
-                )
-                context.paint()
-            GLib.idle_add(
-                self.IdleUpdateLabels,
-                self.FPSRate1,
-                str(self.demoProcess1.FPSAvarage()),
-            )
-        except:
-            GLib.idle_add(self.IdleUpdateLabels, self.FPSRate1, "0")
-            pass
-        widget.queue_draw()
+        raise RuntimeError("This function is not needed in the current implementation")
