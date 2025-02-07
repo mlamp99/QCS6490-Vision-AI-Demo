@@ -10,6 +10,7 @@ import gi
 from vai.cam import camThread
 from vai.common import APP_HEADER, TRIA
 from vai.handler import Handler
+from vai.perf_graphing import RealTimeGraph
 
 # os.environ["XDG_RUNTIME_DIR"] = "/dev/socket/weston"
 # os.environ["WAYLAND_DISPLAY"] = "wayland-1"
@@ -148,6 +149,10 @@ class Video:
         self.eventHandler.BottomBox = GladeBuilder.get_object("BottomBox")
         self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
         self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
+
+        # TODO: Dynamic sizing, positioning
+        rtg = RealTimeGraph()
+        self.eventHandler.BottomBox.add(rtg)
 
         self.eventHandler.QProf = QProfProcess()
 
