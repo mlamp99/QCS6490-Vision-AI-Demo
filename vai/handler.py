@@ -4,25 +4,33 @@ import sys
 from time import sleep
 
 import gi
-import psutil
 
-from .cam import camThread
 from .common import (
     APP_NAME,
     CAMERA,
     CLASSIFICATION,
+    CPU_THERMAL_KEY,
+    CPU_UTIL_KEY,
     DEFAULT_DUAL_WINDOW,
     DEFAULT_LEFT_WINDOW,
     DEPTH_SEGMENTATION,
+    GPU_THERMAL_KEY,
+    GPU_UTIL_KEY,
+    GRAPH_SAMPLE_SIZE,
+    MEM_THERMAL_KEY,
+    MEM_UTIL_KEY,
     OBJECT_DETECTION,
     POSE_DETECTION,
     SEGMENTATION,
+    HW_SAMPLING_PERIOD_ms,
 )
+from .gst_thread import GstPipeline
+from .psutil_profile import get_cpu_gpu_mem_temps
 
 # Locks app version, prevents warnings
 gi.require_version("Gtk", "3.0")
 
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, GObject, Gtk
 
 # Tuning variable to adjust the height of the video display
 HEIGHT_OFFSET = 17
@@ -61,6 +69,15 @@ class Handler:
         self.display_fps_metrics = display_fps_metrics
         self.USBCameras = []
 
+        # TODO: protect with sync primitive?
+        self.sample_data = {
+            CPU_UTIL_KEY: 0,
+            MEM_UTIL_KEY: 0,
+            GPU_UTIL_KEY: 0,
+            CPU_THERMAL_KEY: 0,
+            MEM_THERMAL_KEY: 0,
+            GPU_THERMAL_KEY: 0,
+        }
         # TODO: scan_for_connected_cameras() to include MIPI
         self.USBCameraCount = self.scan_for_connected_usb_cameras()
         self.cam1 = self.USBCameras[0][1] if self.USBCameraCount > 0 else None
@@ -70,8 +87,7 @@ class Handler:
         print(f"Using CAM2: {self.cam2}")
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
-        # GObject.timeout_add(100,  self.UpdateLoads)
-        # GObject.timeout_add(2000, self.UpdateTemp)
+        GObject.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_sample_data)
 
     def scan_for_connected_usb_cameras(self):
         """Scans for cameras via v4l"""
@@ -104,71 +120,60 @@ class Handler:
 
         sys.exit(0)
 
-    def UpdateLoads(self):
+    def update_temps(self):
+        cpu_temp, gpu_temp, mem_temp = get_cpu_gpu_mem_temps()
+        self.sample_data[CPU_THERMAL_KEY] = cpu_temp
+        if cpu_temp is not None:
+            GLib.idle_add(
+                self.IdleUpdateLabels,
+                self.CPU_temp,
+                "{:.2f}".format(cpu_temp, 2),
+            )
+        self.sample_data[GPU_THERMAL_KEY] = gpu_temp
+        if gpu_temp is not None:
+            GLib.idle_add(
+                self.IdleUpdateLabels,
+                self.GPU_temp,
+                "{:.2f}".format(gpu_temp, 2),
+            )
+        self.sample_data[MEM_THERMAL_KEY] = mem_temp
+        if mem_temp is not None:
+            GLib.idle_add(
+                self.IdleUpdateLabels,
+                self.MEM_temp,
+                "{:.2f}".format(mem_temp, 2),
+            )
+
+        return True
+
+    def update_loads(self):
+        cpu_util, gpu_util, mem_util = (
+            self.QProf.get_cpu_usage_pct(),
+            self.QProf.get_gpu_usage_pct(),
+            self.QProf.get_memory_usage_pct(),
+        )
+        self.sample_data[CPU_UTIL_KEY] = cpu_util
+        self.sample_data[GPU_UTIL_KEY] = gpu_util
+        self.sample_data[MEM_UTIL_KEY] = mem_util
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.CPU_load,
-            "{:.2f}".format(self.QProf.GetCPU(), 2),
+            "{:.2f}".format(cpu_util, 2),
         )
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.GPU_load,
-            "{:.2f}".format(self.QProf.GetGPU(), 2),
+            "{:.2f}".format(gpu_util, 2),
         )
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.MEM_load,
-            "{:.2f}".format(self.QProf.GetMEM(), 2),
+            "{:.2f}".format(mem_util, 2),
         )
         return True
 
-    def UpdateTemp(self):
-        temps = psutil.sensors_temperatures()
-        if temps:
-            cpuTemp = 0
-            gpuTemp = 0
-            memTemp = 0
-            for name, entries in temps.items():
-                for entry in entries:
-                    if name == "cpu0_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu1_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu2_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu3_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu4_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu5_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu6_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu7_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu8_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu9_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu10_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu11_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "ddr_thermal":
-                        memTemp = entry.current
-                    elif name == "video_thermal":
-                        gpuTemp = entry.current
-
-            GLib.idle_add(
-                self.IdleUpdateLabels, self.CPU_temp, "{:.2f}".format(cpuTemp / 12, 2)
-            )
-            GLib.idle_add(
-                self.IdleUpdateLabels, self.GPU_temp, "{:.2f}".format(gpuTemp, 2)
-            )
-            GLib.idle_add(
-                self.IdleUpdateLabels, self.MEM_temp, "{:.2f}".format(memTemp, 2)
-            )
-        return True
+    def update_sample_data(self):
+        return self.update_temps() and self.update_loads()
 
     def close_about(self, *args):
         self.aboutWindow.hide()
@@ -239,13 +244,13 @@ class Handler:
             # TODO: Pull up allocation/sizing to previous function closer to init
             allocation = self.DrawArea1.get_allocation()
             self.DrawArea1_x = allocation.x
-            self.DrawArea1_y = allocation.y + HEIGHT_OFFSET
+            self.DrawArea1_y = allocation.y
             self.DrawArea1_w = MAX_WINDOW_WIDTH
             self.DrawArea1_h = MAX_WINDOW_HEIGHT
 
             allocation = self.DrawArea2.get_allocation()
             self.DrawArea2_x = allocation.x
-            self.DrawArea2_y = allocation.y + HEIGHT_OFFSET
+            self.DrawArea2_y = allocation.y
             self.DrawArea2_w = MAX_WINDOW_WIDTH
             self.DrawArea2_h = MAX_WINDOW_HEIGHT
 
@@ -282,7 +287,7 @@ class Handler:
         if index == 0:
             self.demoProcess0 = None
         else:
-            self.demoProcess0 = camThread(self.getCommand(index, 0))
+            self.demoProcess0 = GstPipeline(self.getCommand(index, 0))
             self.demoProcess0.start()
 
     def demo1_selection_changed_cb(self, combo):
@@ -292,7 +297,7 @@ class Handler:
         if index == 0:
             self.demoProcess1 = None
         else:
-            self.demoProcess1 = camThread(self.getCommand(index, 1))
+            self.demoProcess1 = GstPipeline(self.getCommand(index, 1))
             self.demoProcess1.start()
 
     def IdleUpdateLabels(self, label, text):
