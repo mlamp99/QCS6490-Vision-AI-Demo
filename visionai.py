@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
+import math
 import os
 import re
 import subprocess
 import threading
+import time
 
 import gi
 
 from vai.cam import camThread
 from vai.common import APP_HEADER, TRIA
 from vai.handler import Handler
-from vai.perf_graphing import RealTimeGraph
 
 # os.environ["XDG_RUNTIME_DIR"] = "/dev/socket/weston"
 # os.environ["WAYLAND_DISPLAY"] = "wayland-1"
@@ -26,7 +27,7 @@ from vai.perf_graphing import RealTimeGraph
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gst, Gtk
+from gi.repository import Gdk, GLib, Gst, Gtk
 
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
@@ -120,6 +121,38 @@ class Video:
         self.localAppThread = threading.Thread(target=self.localApp)
         self.localAppThread.start()
 
+    def on_graph_draw(self, widget, cr):
+        """Draw the real-time graph using Cairo"""
+        width = widget.get_allocated_width()
+        height = widget.get_allocated_height()
+
+        # Draw the sine wave graph
+        cr.set_source_rgb(0.996, 0.0, 0.635)  # TRIA pink
+        cr.set_line_width(2)
+
+        # Start at left edge
+        cr.move_to(0, height // 2 + self.graph_data[0])
+        # Draw points from stored data
+        for x in range(1, len(self.graph_data)):
+            cr.line_to(x, height // 2 + self.graph_data[x])
+
+        cr.stroke()  # Render the line
+
+    def update_graph(self):
+        """Update the graph values for real-time rendering"""
+        elapsed = time.time()
+
+        # Shift old data left
+        self.graph_data.pop(0)
+
+        # Add new value (sine wave example)
+        new_value = int(30 * math.sin(elapsed * 2))  # Scaled sine wave
+        self.graph_data.append(new_value)
+
+        # Request a redraw
+        self.eventHandler.GraphDrawArea.queue_draw()
+        return True  # Continue updating
+
     def localApp(self):
         global GladeBuilder
 
@@ -149,10 +182,11 @@ class Video:
         self.eventHandler.BottomBox = GladeBuilder.get_object("BottomBox")
         self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
         self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
-
+        self.eventHandler.GraphDrawArea = GladeBuilder.get_object("GraphDrawArea")
         # TODO: Dynamic sizing, positioning
-        rtg = RealTimeGraph()
-        self.eventHandler.BottomBox.add(rtg)
+        self.eventHandler.GraphDrawArea.connect("draw", self.on_graph_draw)
+        self.graph_data = [0] * 1920  # Store graph values
+        GLib.timeout_add(16, self.update_graph)  # Calls update_graph() every 16ms
 
         self.eventHandler.QProf = QProfProcess()
 
