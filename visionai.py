@@ -144,12 +144,11 @@ class Video:
         self.eventHandler.GPU_temp = GladeBuilder.get_object("GPU_temp")
         self.eventHandler.MEM_temp = GladeBuilder.get_object("MEM_temp")
         self.eventHandler.TopBox = GladeBuilder.get_object("TopBox")
+        self.eventHandler.DataGrid = GladeBuilder.get_object("DataGrid")
         self.eventHandler.BottomBox = GladeBuilder.get_object("BottomBox")
         self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
         self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
 
-        # self.eventHandler.demoProcess0 = camThread(self.eventHandler.getCommand(1, 0))
-        # self.eventHandler.demoProcess1 = camThread(self.eventHandler.getCommand(1, 1))
         self.eventHandler.QProf = QProfProcess()
 
         # TODO: Can just put these in CSS
@@ -159,6 +158,7 @@ class Video:
         self.eventHandler.TopBox.override_background_color(
             Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0.5)
         )
+
         self.eventHandler.BottomBox.override_background_color(
             Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0.5)
         )
@@ -167,14 +167,6 @@ class Video:
         self.eventHandler.MainWindow.set_keep_below(True)
         self.eventHandler.MainWindow.maximize()
         self.eventHandler.MainWindow.show_all()
-
-        # self.eventHandler.demoProcess0.start()
-        # while self.eventHandler.demoProcess0.FrameOk == False:
-        #    sleep(0.1)
-
-        # self.eventHandler.demoProcess1.start()
-        # while self.eventHandler.demoProcess1.FrameOk == False:
-        #    sleep(0.1)
 
         # self.eventHandler.QProf.start()
 

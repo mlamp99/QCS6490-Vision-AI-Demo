@@ -127,7 +127,7 @@ Development Kit</property>
                     <child internal-child="entry">
                       <object class="GtkEntry">
                         <property name="can_focus">True</property>
-                        <property name="text" translatable="yes">Camera</property>
+                        <property name="text" translatable="yes">Pipeline</property>
                       </object>
                     </child>
                     <style>
@@ -188,7 +188,7 @@ Development Kit</property>
                     <child internal-child="entry">
                       <object class="GtkEntry">
                         <property name="can_focus">True</property>
-                        <property name="text" translatable="yes">Camera</property>
+                        <property name="text" translatable="yes">Pipeline</property>
                       </object>
                     </child>
                     <style>
@@ -356,7 +356,7 @@ Development Kit</property>
                 <property name="can_focus">False</property>
                 <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkGrid">
+                  <object class="GtkGrid" id="DataGrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="halign">center</property>

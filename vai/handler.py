@@ -26,6 +26,8 @@ from gi.repository import GLib, Gtk
 
 # Tuning variable to adjust the height of the video display
 HEIGHT_OFFSET = 17
+MAX_WINDOW_WIDTH = 1920 // 2
+MAX_WINDOW_HEIGHT = 720
 
 DUAL_WINDOW_DEMOS = ["depth segmentation"]
 
@@ -218,31 +220,34 @@ class Handler:
         w = self.DrawArea1_w if stream_index == 0 else self.DrawArea2_w
         h = self.DrawArea1_h if stream_index == 0 else self.DrawArea2_h
         command = command.replace(
-            "x=10 y=50 width=640 height=480",
+            "<ONE_WINDOW_XYWH>",
             f"x={x} y={y} width={w} height={h}",
         )
         # WARN: Stream index doesnt matter here. Its essential the dual window starts at drawarea1 and is 2*w wide
         command = command.replace(
-            "<DUAL_WINDOW_XY>",
-            f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={2*self.DrawArea1_w} height={self.DrawArea1_h}",
+            "<DUAL_WINDOW_XYWH>",
+            f"x={self.DrawArea1_x} y={self.DrawArea1_y} width={2*w} height={h}",
         )
         return command
 
     def update_window_allocations(self):
         """Dynamically determine the size and position of the video windows based on the current GUI partitioning."""
+
+        # TODO: Scale dual window res to draw area size. Draw Area needs to have constrants and be centered, so this is a tempororary solution
+        # IE, remove the hardcoded vals
         if not self.allocated_sizes:
             # TODO: Pull up allocation/sizing to previous function closer to init
             allocation = self.DrawArea1.get_allocation()
             self.DrawArea1_x = allocation.x
             self.DrawArea1_y = allocation.y + HEIGHT_OFFSET
-            self.DrawArea1_w = allocation.width
-            self.DrawArea1_h = allocation.height + HEIGHT_OFFSET
+            self.DrawArea1_w = MAX_WINDOW_WIDTH
+            self.DrawArea1_h = MAX_WINDOW_HEIGHT
 
             allocation = self.DrawArea2.get_allocation()
             self.DrawArea2_x = allocation.x
             self.DrawArea2_y = allocation.y + HEIGHT_OFFSET
-            self.DrawArea2_w = allocation.width
-            self.DrawArea2_h = allocation.height + HEIGHT_OFFSET
+            self.DrawArea2_w = MAX_WINDOW_WIDTH
+            self.DrawArea2_h = MAX_WINDOW_HEIGHT
 
             self.allocated_sizes = True
 
@@ -251,6 +256,7 @@ class Handler:
         # TODO: just use combo.get_active_id() instead of index. Then map into demo directly
         command = self.demoList[demoIndex][:]
         command = self._modify_command_pipeline(command, stream_index)
+        print(command)
         return command
 
     def kill_demos(self, demo_process, demo_selection_combo):

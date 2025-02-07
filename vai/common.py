@@ -4,9 +4,9 @@ import subprocess
 
 # WARN: These commands will be processed by application. Tags like <TAG> are likely placeholder
 
-DEFAULT_LEFT_WINDOW = "waylandsink x=10 y=50 width=640 height=480 async=true sync=false"
-
-DEFAULT_DUAL_WINDOW = "waylandsink async=true sync=false <DUAL_WINDOW_XY>"
+# Having one default is fine, as we can extrapolate for the other window
+DEFAULT_LEFT_WINDOW = "waylandsink async=true sync=false <ONE_WINDOW_XYWH>"
+DEFAULT_DUAL_WINDOW = "waylandsink async=true sync=false <DUAL_WINDOW_XYWH>"
 
 # TODO: add FPS support for camera
 # TODO: What is the most reasonable res?
@@ -40,8 +40,8 @@ DEPTH_SEGMENTATION = "<DATA_SRC> ! qtivtransform ! \
     video/x-raw(memory:GBM),format=NV12,width=1920,height=1080,framerate=30/1,compression=ubwc ! \
     tee name=split \
     split. ! queue ! qtivcomposer background=0 name=dual \
-        sink_0::position=<0,0> sink_0::dimensions=<960,740> \
-        sink_1::position=<960,0> sink_1::dimensions=<960,740> \
+        sink_0::position=<0,0> sink_0::dimensions=<960,720> \
+        sink_1::position=<960,0> sink_1::dimensions=<960,720> \
     ! queue ! <DUAL_DISPLAY> \
     split. ! queue ! qtimlvconverter ! queue ! \
         qtimltflite delegate=external \
@@ -50,7 +50,7 @@ DEPTH_SEGMENTATION = "<DATA_SRC> ! qtivtransform ! \
             model=/opt/Midas-V2-Quantized.tflite ! queue ! \
         qtimlvsegmentation module=midas-v2 labels=/opt/monodepth.labels \
             constants=Midas,q-offsets=<0.0>,q-scales=<4.716535568237305>; ! \
-        video/x-raw,width=256,height=144 ! queue ! dual.sink_1"
+        video/x-raw,width=960,height=720 ! queue ! dual.sink_1"
 
 
 APP_NAME = f"QCS6490 Vision AI"
