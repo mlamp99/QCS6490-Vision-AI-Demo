@@ -9,8 +9,13 @@ import time
 
 import gi
 
-from vai.cam import camThread
-from vai.common import APP_HEADER, TRIA
+from vai.common import (
+    APP_HEADER,
+    TRIA,
+    TRIA_BLUE_RGBH,
+    TRIA_PINK_RGBH,
+    TRIA_YELLOW_RGBH,
+)
 from vai.handler import Handler
 
 # os.environ["XDG_RUNTIME_DIR"] = "/dev/socket/weston"
@@ -22,12 +27,17 @@ from vai.handler import Handler
 # os.environ["LD_LIBRARY_PATH"] = "$LD_LIBRARY_PATH:/var/QualcommProfiler/libs/"
 # os.environ["PATH"] = "$PATH:/data/shared/QualcommProfiler/bins"
 
-
 # Locks app version, prevents warnings
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gst, Gtk
+
+GRAPH_COLORS_RGBF = [
+    tuple(c / 255.0 for c in TRIA_PINK_RGBH),
+    tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
+    tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
+]
 
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
@@ -122,36 +132,34 @@ class Video:
         self.localAppThread.start()
 
     def on_graph_draw(self, widget, cr):
-        """Draw the real-time graph using Cairo"""
+        """Draw three out-of-phase sine waves using Cairo"""
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
 
-        # Draw the sine wave graph
-        cr.set_source_rgb(0.996, 0.0, 0.635)  # TRIA pink
         cr.set_line_width(2)
 
-        # Start at left edge
-        cr.move_to(0, height // 2 + self.graph_data[0])
-        # Draw points from stored data
-        for x in range(1, len(self.graph_data)):
-            cr.line_to(x, height // 2 + self.graph_data[x])
-
-        cr.stroke()  # Render the line
+        # Draw each sine wave
+        for i in range(3):
+            cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
+            cr.move_to(0, height // 2 + self.graph_data[i][0])
+            for x in range(1, len(self.graph_data[i])):
+                cr.line_to(x, height // 2 + self.graph_data[i][x])
+            cr.stroke()
 
     def update_graph(self):
         """Update the graph values for real-time rendering"""
         elapsed = time.time()
 
-        # Shift old data left
-        self.graph_data.pop(0)
-
-        # Add new value (sine wave example)
-        new_value = int(30 * math.sin(elapsed * 2))  # Scaled sine wave
-        self.graph_data.append(new_value)
+        # For each wave, pop the oldest sample and append a new one
+        for i in range(3):
+            self.graph_data[i].pop(0)
+            # Eachwave has a different phase
+            new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
+            self.graph_data[i].append(new_value)
 
         # Request a redraw
         self.eventHandler.GraphDrawArea.queue_draw()
-        return True  # Continue updating
+        return True
 
     def localApp(self):
         global GladeBuilder
@@ -185,7 +193,10 @@ class Video:
         self.eventHandler.GraphDrawArea = GladeBuilder.get_object("GraphDrawArea")
         # TODO: Dynamic sizing, positioning
         self.eventHandler.GraphDrawArea.connect("draw", self.on_graph_draw)
-        self.graph_data = [0] * 1920  # Store graph values
+        # TODO: replace with real perf data
+        # Maybe keep canned generation for situations that perf depends arent available
+        self.graph_data = [[0] * 1920 for _ in range(3)]
+        self.phases = [0, math.pi / 3, 2 * math.pi / 3]
         GLib.timeout_add(16, self.update_graph)  # Calls update_graph() every 16ms
 
         self.eventHandler.QProf = QProfProcess()

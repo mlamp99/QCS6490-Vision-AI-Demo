@@ -2,6 +2,10 @@
 
 import subprocess
 
+TRIA_PINK_RGBH = (0xFE, 0x00, 0xA2)
+TRIA_BLUE_RGBH = (0x00, 0x19, 0x4F)
+TRIA_YELLOW_RGBH = (0xFE, 0xDB, 0x00)
+
 # WARN: These commands will be processed by application. Tags like <TAG> are likely placeholder
 
 # Having one default is fine, as we can extrapolate for the other window
