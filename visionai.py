@@ -160,15 +160,16 @@ class Video:
         spacing = 30  # Vertical spacing between entries
 
         # TODO: Scale by res?
-        cr.select_font_face("Sans", 0, 0)  # Normal weight & slant
+        cr.select_font_face("Sans", 0, 1)  # Bold weight & normal slant
         cr.set_font_size(20)
 
-        wave_labels = ["CPU %", "Mem %", "GPU %"]  # Labels for each wave
+        wave_labels = ["CPU %", "LPDDR5 %", "GPU %"]  # Labels for each wave
         for i, label in enumerate(wave_labels):
             item_y = legend_margin_y + i * spacing
 
             # Tuning offset variable
-            text_guess_width = 80
+            # TODO: scale with res
+            text_guess_width = 90
             legend_x = width - legend_margin_x - (text_guess_width + box_size + 10)
 
             # Draw color box
