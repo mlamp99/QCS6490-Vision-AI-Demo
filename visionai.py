@@ -132,19 +132,51 @@ class Video:
         self.localAppThread.start()
 
     def on_graph_draw(self, widget, cr):
-        """Draw three out-of-phase sine waves using Cairo"""
+        """Draw three out-of-phase sine waves + legend (top-right) using Cairo"""
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
 
+        wave_labels = ["CPU %", "Mem %", "GPU %"]  # Labels for each wave
         cr.set_line_width(2)
 
-        # Draw each sine wave
+        # --- Draw line graph ---
         for i in range(3):
             cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
             cr.move_to(0, height // 2 + self.graph_data[i][0])
             for x in range(1, len(self.graph_data[i])):
                 cr.line_to(x, height // 2 + self.graph_data[i][x])
             cr.stroke()
+
+        # --- Draw Legend ---
+        legend_margin_x = 20  # Distance from the right edge
+        legend_margin_y = 20  # Distance from the top edge
+        box_size = 20  # Size of the color box
+        spacing = 30  # Vertical spacing between entries
+
+        # TODO: Scale by res?
+        cr.select_font_face("Sans", 0, 0)  # Normal weight & slant
+        cr.set_font_size(20)
+
+        for i, label in enumerate(wave_labels):
+            item_y = legend_margin_y + i * spacing
+
+            # Tuning offset variable
+            text_guess_width = 80
+            legend_x = width - legend_margin_x - (text_guess_width + box_size + 10)
+
+            # Draw color box
+            cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
+            cr.rectangle(legend_x, item_y, box_size, box_size)
+            cr.fill()
+
+            # Draw label text in white
+            cr.set_source_rgb(1, 1, 1)
+            text_x = legend_x + box_size + 10
+            text_y = (
+                item_y + box_size - 5
+            )  # Shift text slightly so it's vertically centered
+            cr.move_to(text_x, text_y)
+            cr.show_text(label)
 
     def update_graph(self):
         """Update the graph values for real-time rendering"""
@@ -195,7 +227,8 @@ class Video:
         self.eventHandler.GraphDrawArea.connect("draw", self.on_graph_draw)
         # TODO: replace with real perf data
         # Maybe keep canned generation for situations that perf depends arent available
-        self.graph_data = [[0] * 1920 for _ in range(3)]
+        # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
+        self.graph_data = [[0] * int(1920 * 0.925) for _ in range(3)]
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
         GLib.timeout_add(16, self.update_graph)  # Calls update_graph() every 16ms
 
