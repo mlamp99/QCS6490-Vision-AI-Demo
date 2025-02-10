@@ -136,10 +136,16 @@ class Video:
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
 
-        wave_labels = ["CPU %", "Mem %", "GPU %"]  # Labels for each wave
+        # --- Draw graph container ---
+        cr.set_source_rgba(0.1, 0.1, 0.1, 0.15)  # Transparent gray container fill
+        cr.rectangle(0, 0, width, height)
+        cr.fill_preserve()
+        cr.set_source_rgb(0.5, 0.5, 0.5)  # Gray border
         cr.set_line_width(2)
+        cr.stroke()
 
         # --- Draw line graph ---
+        cr.set_line_width(2)
         for i in range(3):
             cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
             cr.move_to(0, height // 2 + self.graph_data[i][0])
@@ -149,7 +155,7 @@ class Video:
 
         # --- Draw Legend ---
         legend_margin_x = 20  # Distance from the right edge
-        legend_margin_y = 20  # Distance from the top edge
+        legend_margin_y = 10  # Distance from the top edge
         box_size = 20  # Size of the color box
         spacing = 30  # Vertical spacing between entries
 
@@ -157,6 +163,7 @@ class Video:
         cr.select_font_face("Sans", 0, 0)  # Normal weight & slant
         cr.set_font_size(20)
 
+        wave_labels = ["CPU %", "Mem %", "GPU %"]  # Labels for each wave
         for i, label in enumerate(wave_labels):
             item_y = legend_margin_y + i * spacing
 
