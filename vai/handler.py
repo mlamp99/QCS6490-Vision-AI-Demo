@@ -1,3 +1,4 @@
+import collections
 import signal
 import subprocess
 import sys
@@ -22,7 +23,7 @@ from .common import (
 # Locks app version, prevents warnings
 gi.require_version("Gtk", "3.0")
 
-from gi.repository import GLib, Gtk
+from gi.repository import GLib, GObject, Gtk
 
 # Tuning variable to adjust the height of the video display
 HEIGHT_OFFSET = 17
@@ -61,6 +62,10 @@ class Handler:
         self.display_fps_metrics = display_fps_metrics
         self.USBCameras = []
 
+        self.cpu_temp = collections.deque([0] * 1800, maxlen=1800)
+        self.mem_temp = collections.deque([0] * 1800, maxlen=1800)
+        self.gpu_temp = collections.deque([0] * 1800, maxlen=1800)
+
         # TODO: scan_for_connected_cameras() to include MIPI
         self.USBCameraCount = self.scan_for_connected_usb_cameras()
         self.cam1 = self.USBCameras[0][1] if self.USBCameraCount > 0 else None
@@ -70,8 +75,8 @@ class Handler:
         print(f"Using CAM2: {self.cam2}")
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
-        # GObject.timeout_add(100,  self.UpdateLoads)
-        # GObject.timeout_add(2000, self.UpdateTemp)
+        GObject.timeout_add(100, self.UpdateLoads)
+        GObject.timeout_add(2000, self.get_temps)
 
     def scan_for_connected_usb_cameras(self):
         """Scans for cameras via v4l"""
@@ -122,8 +127,10 @@ class Handler:
         )
         return True
 
-    def UpdateTemp(self):
+    def get_temps(self):
         temps = psutil.sensors_temperatures()
+        print(temps)
+        # TODO: reduce & scale with regex
         if temps:
             cpuTemp = 0
             gpuTemp = 0
@@ -159,6 +166,10 @@ class Handler:
                     elif name == "video_thermal":
                         gpuTemp = entry.current
 
+            print(cpuTemp, gpuTemp, memTemp)
+            self.cpu_temp.append(cpuTemp)
+            self.mem_temp.append(memTemp)
+            self.gpu_temp.append(gpuTemp)
             GLib.idle_add(
                 self.IdleUpdateLabels, self.CPU_temp, "{:.2f}".format(cpuTemp / 12, 2)
             )

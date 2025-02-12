@@ -259,7 +259,7 @@ class Video:
         self.eventHandler.MainWindow.maximize()
         self.eventHandler.MainWindow.show_all()
 
-        # self.eventHandler.QProf.start()
+        self.eventHandler.QProf.start()
 
         Gtk.main()
 
