@@ -2,8 +2,6 @@
 
 import math
 import os
-import re
-import subprocess
 import threading
 import time
 
@@ -17,6 +15,7 @@ from vai.common import (
     TRIA_YELLOW_RGBH,
 )
 from vai.handler import Handler
+from vai.qprofile import QProfProcess
 
 # os.environ["XDG_RUNTIME_DIR"] = "/dev/socket/weston"
 # os.environ["WAYLAND_DISPLAY"] = "wayland-1"
@@ -50,75 +49,6 @@ def index_containing_substring(the_list, substring):
         if substring in s:
             return i
     return -1
-
-
-class QProfProcess(threading.Thread):
-    def __init__(self):
-        self.enabled = True
-        self.CPU = 0
-        self.GPU = 0
-        self.MEM = 0
-        threading.Thread.__init__(self)
-
-    def run(self):
-        ansi_escape_8bit = re.compile(
-            rb"(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])"
-        )
-        while self.enabled:
-            p = subprocess.Popen(
-                "qprof \
-                                    --profile \
-                                    --profile-type async \
-                                    --result-format CSV \
-                                    --capabilities-list profiler:apps-proc-cpu-metrics profiler:proc-gpu-specific-metrics profiler:apps-proc-mem-metrics \
-                                    --profile-time 10 \
-                                    --sampling-rate 50 \
-                                    --streaming-rate 500 \
-                                    --live \
-                                    --metric-id-list 4648 4616 4865".split(),
-                shell=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            while self.enabled:
-                # line = p.stdout.readline().decode('utf-8').encode("ascii","ignore")
-                line = p.stdout.readline().decode("utf-8").encode("ascii", "ignore")
-
-                line = ansi_escape_8bit.sub(b"", line)
-                if not line:
-                    break
-                # the real code does filtering here
-
-                if line.find(b"CPU Total Load:") > -1:
-                    result = re.search(b"CPU Total Load:(.*)%", line)
-                    self.CPU = float(result.group(1))
-                    # print ('CPU Usage', self.CPU, '%')
-                elif line.find(b"GPU Utilization:") > -1:
-                    result = re.search(b"GPU Utilization:(.*)%", line)
-                    self.GPU = float(result.group(1))
-                    # print ('GPU Usage', self.GPU, '%')
-                elif line.find(b"Memory Usage %:") > -1:
-                    result = re.search(b"Memory Usage %:(.*)%", line)
-                    self.MEM = float(result.group(1))
-                    # print ('MEM Usage', self.MEM, '%')
-
-            # cleanup output files
-            subprocess.call(
-                "/bin/rm -rf /data/shared/QualcommProfiler/profilingresults/*",
-                shell=True,
-            )
-
-    def Close(self):
-        self.enabled = False
-
-    def GetCPU(self):
-        return round(self.CPU, 2)
-
-    def GetGPU(self):
-        return round(self.GPU, 2)
-
-    def GetMEM(self):
-        return round(self.MEM, 2)
 
 
 class Video:

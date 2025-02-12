@@ -1,4 +1,5 @@
 import collections
+import re
 import signal
 import subprocess
 import sys
@@ -62,9 +63,9 @@ class Handler:
         self.display_fps_metrics = display_fps_metrics
         self.USBCameras = []
 
-        self.cpu_temp = collections.deque([0] * 1800, maxlen=1800)
-        self.mem_temp = collections.deque([0] * 1800, maxlen=1800)
-        self.gpu_temp = collections.deque([0] * 1800, maxlen=1800)
+        self.cpu_temps = collections.deque([0] * 1800, maxlen=1800)
+        self.mem_temps = collections.deque([0] * 1800, maxlen=1800)
+        self.gpu_temps = collections.deque([0] * 1800, maxlen=1800)
 
         # TODO: scan_for_connected_cameras() to include MIPI
         self.USBCameraCount = self.scan_for_connected_usb_cameras()
@@ -75,8 +76,8 @@ class Handler:
         print(f"Using CAM2: {self.cam2}")
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
-        GObject.timeout_add(100, self.UpdateLoads)
-        GObject.timeout_add(2000, self.get_temps)
+        GObject.timeout_add(250, self.update_loads)
+        GObject.timeout_add(250, self.get_temps)
 
     def scan_for_connected_usb_cameras(self):
         """Scans for cameras via v4l"""
@@ -109,75 +110,56 @@ class Handler:
 
         sys.exit(0)
 
-    def UpdateLoads(self):
+    def update_loads(self):
+        print("Update loads")
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.CPU_load,
-            "{:.2f}".format(self.QProf.GetCPU(), 2),
+            "{:.2f}".format(self.QProf.get_cpu_usage_pct(), 2),
         )
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.GPU_load,
-            "{:.2f}".format(self.QProf.GetGPU(), 2),
+            "{:.2f}".format(self.QProf.get_gpu_usage_pct(), 2),
         )
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.MEM_load,
-            "{:.2f}".format(self.QProf.GetMEM(), 2),
+            "{:.2f}".format(self.QProf.get_memory_usage_pct(), 2),
         )
         return True
 
     def get_temps(self):
         temps = psutil.sensors_temperatures()
-        print(temps)
-        # TODO: reduce & scale with regex
         if temps:
-            cpuTemp = 0
-            gpuTemp = 0
-            memTemp = 0
+            cpu_temp_sum = 0
+            cpu_count = 0
+            gpu_temp = 0
+            mem_temp = 0
             for name, entries in temps.items():
                 for entry in entries:
-                    if name == "cpu0_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu1_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu2_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu3_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu4_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu5_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu6_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu7_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu8_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu9_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu10_thermal":
-                        cpuTemp = cpuTemp + entry.current
-                    elif name == "cpu11_thermal":
-                        cpuTemp = cpuTemp + entry.current
+                    if re.match(r"cpu\d+_thermal", name):
+                        cpu_temp_sum += entry.current
+                        cpu_count += 1
                     elif name == "ddr_thermal":
-                        memTemp = entry.current
+                        mem_temp: w = entry.current
                     elif name == "video_thermal":
-                        gpuTemp = entry.current
+                        gpu_temp = entry.current
 
-            print(cpuTemp, gpuTemp, memTemp)
-            self.cpu_temp.append(cpuTemp)
-            self.mem_temp.append(memTemp)
-            self.gpu_temp.append(gpuTemp)
+            cpu_temp_avg = cpu_temp_sum / cpu_count if cpu_count > 0 else 0.0
+            self.cpu_temps.append(cpu_temp_avg)
+            self.mem_temps.append(mem_temp)
+            self.gpu_temps.append(gpu_temp)
             GLib.idle_add(
-                self.IdleUpdateLabels, self.CPU_temp, "{:.2f}".format(cpuTemp / 12, 2)
+                self.IdleUpdateLabels,
+                self.CPU_temp,
+                "{:.2f}".format(cpu_temp_avg, 2),
             )
             GLib.idle_add(
-                self.IdleUpdateLabels, self.GPU_temp, "{:.2f}".format(gpuTemp, 2)
+                self.IdleUpdateLabels, self.GPU_temp, "{:.2f}".format(gpu_temp, 2)
             )
             GLib.idle_add(
-                self.IdleUpdateLabels, self.MEM_temp, "{:.2f}".format(memTemp, 2)
+                self.IdleUpdateLabels, self.MEM_temp, "{:.2f}".format(mem_temp, 2)
             )
         return True
 
