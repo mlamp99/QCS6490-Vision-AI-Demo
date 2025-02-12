@@ -1,12 +1,10 @@
 import collections
-import re
 import signal
 import subprocess
 import sys
 from time import sleep
 
 import gi
-import psutil
 
 from .cam import camThread
 from .common import (
@@ -20,6 +18,7 @@ from .common import (
     POSE_DETECTION,
     SEGMENTATION,
 )
+from .psutil_profile import get_cpu_gpu_mem_temps
 
 # Locks app version, prevents warnings
 gi.require_version("Gtk", "3.0")
@@ -77,7 +76,7 @@ class Handler:
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
         GObject.timeout_add(250, self.update_loads)
-        GObject.timeout_add(250, self.get_temps)
+        GObject.timeout_add(250, self.update_temps)
 
     def scan_for_connected_usb_cameras(self):
         """Scans for cameras via v4l"""
@@ -110,8 +109,33 @@ class Handler:
 
         sys.exit(0)
 
+    def update_temps(self):
+        cpu_temp, gpu_temp, mem_temp = get_cpu_gpu_mem_temps()
+        if cpu_temp is not None:
+            self.cpu_temps.append(cpu_temp)
+            GLib.idle_add(
+                self.IdleUpdateLabels,
+                self.CPU_temp,
+                "{:.2f}".format(cpu_temp, 2),
+            )
+        if gpu_temp is not None:
+            self.gpu_temps.append(gpu_temp)
+            GLib.idle_add(
+                self.IdleUpdateLabels,
+                self.GPU_temp,
+                "{:.2f}".format(gpu_temp, 2),
+            )
+        if mem_temp is not None:
+            self.mem_temps.append(mem_temp)
+            GLib.idle_add(
+                self.IdleUpdateLabels,
+                self.MEM_temp,
+                "{:.2f}".format(mem_temp, 2),
+            )
+
+        return True
+
     def update_loads(self):
-        print("Update loads")
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.CPU_load,
@@ -127,40 +151,6 @@ class Handler:
             self.MEM_load,
             "{:.2f}".format(self.QProf.get_memory_usage_pct(), 2),
         )
-        return True
-
-    def get_temps(self):
-        temps = psutil.sensors_temperatures()
-        if temps:
-            cpu_temp_sum = 0
-            cpu_count = 0
-            gpu_temp = 0
-            mem_temp = 0
-            for name, entries in temps.items():
-                for entry in entries:
-                    if re.match(r"cpu\d+_thermal", name):
-                        cpu_temp_sum += entry.current
-                        cpu_count += 1
-                    elif name == "ddr_thermal":
-                        mem_temp: w = entry.current
-                    elif name == "video_thermal":
-                        gpu_temp = entry.current
-
-            cpu_temp_avg = cpu_temp_sum / cpu_count if cpu_count > 0 else 0.0
-            self.cpu_temps.append(cpu_temp_avg)
-            self.mem_temps.append(mem_temp)
-            self.gpu_temps.append(gpu_temp)
-            GLib.idle_add(
-                self.IdleUpdateLabels,
-                self.CPU_temp,
-                "{:.2f}".format(cpu_temp_avg, 2),
-            )
-            GLib.idle_add(
-                self.IdleUpdateLabels, self.GPU_temp, "{:.2f}".format(gpu_temp, 2)
-            )
-            GLib.idle_add(
-                self.IdleUpdateLabels, self.MEM_temp, "{:.2f}".format(mem_temp, 2)
-            )
         return True
 
     def close_about(self, *args):

@@ -38,20 +38,15 @@ GRAPH_COLORS_RGBF = [
     tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 ]
 
+GRAPH_PERIOD_mS = 16  # 60 FPS
+
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
 RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
 LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
 
-def index_containing_substring(the_list, substring):
-    for i, s in enumerate(the_list):
-        if substring in s:
-            return i
-    return -1
-
-
-class Video:
+class VaiDemoManager:
     def __init__(self, port=7001):
         Gst.init(None)
 
@@ -168,7 +163,7 @@ class Video:
         # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
         self.graph_data = [[0] * int(1920 * 0.925) for _ in range(3)]
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
-        GLib.timeout_add(16, self.update_graph)  # Calls update_graph() every 16ms
+        GLib.timeout_add(GRAPH_PERIOD_mS, self.update_graph)
 
         self.eventHandler.QProf = QProfProcess()
 
@@ -199,4 +194,4 @@ if __name__ == "__main__":
     print(f"\nLaunching {APP_HEADER}")
     # Create the video object
     # Add port= if is necessary to use a different one
-    video = Video()
+    video = VaiDemoManager()
