@@ -9,10 +9,12 @@ import gi
 
 from vai.common import (
     APP_HEADER,
+    GRAPH_SAMPLE_SIZE,
     TRIA,
     TRIA_BLUE_RGBH,
     TRIA_PINK_RGBH,
     TRIA_YELLOW_RGBH,
+    GRAPH_DRAW_PERIOD_ms,
 )
 from vai.handler import Handler
 from vai.qprofile import QProfProcess
@@ -38,8 +40,6 @@ GRAPH_COLORS_RGBF = [
     tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 ]
 
-GRAPH_PERIOD_mS = 16  # 60 FPS
-
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
 RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
@@ -56,8 +56,10 @@ class VaiDemoManager:
         self.localAppThread = threading.Thread(target=self.localApp)
         self.localAppThread.start()
 
+    # TODO: refactor for improved maintainability
     def on_graph_draw(self, widget, cr):
-        """Draw three out-of-phase sine waves + legend (top-right) using Cairo"""
+        """Draw the graph on the draw area"""
+
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
 
@@ -73,9 +75,9 @@ class VaiDemoManager:
         cr.set_line_width(2)
         for i in range(3):
             cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
-            cr.move_to(0, height // 2 + self.graph_data[i][0])
+            cr.move_to(0, height * (1.0 - self.graph_data[i][0] / 100))
             for x in range(1, len(self.graph_data[i])):
-                cr.line_to(x, height // 2 + self.graph_data[i][x])
+                cr.line_to(x, height * (1.0 - self.graph_data[i][x] / 100))
             cr.stroke()
 
         # --- Draw Legend ---
@@ -115,12 +117,15 @@ class VaiDemoManager:
         """Update the graph values for real-time rendering"""
         elapsed = time.time()
 
+        self.graph_data[0] = self.eventHandler.cpu_util_samples.copy()
+        self.graph_data[1] = self.eventHandler.gpu_util_samples.copy()
+        self.graph_data[2] = self.eventHandler.mem_util_samples.copy()
         # For each wave, pop the oldest sample and append a new one
-        for i in range(3):
-            self.graph_data[i].pop(0)
-            # Eachwave has a different phase
-            new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
-            self.graph_data[i].append(new_value)
+        # for i in range(3):
+        # self.graph_data[i].pop(0)
+        # Eachwave has a different phase
+        # new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
+        # self.graph_data[i].append(new_value)
 
         # Request a redraw
         self.eventHandler.GraphDrawArea.queue_draw()
@@ -161,9 +166,9 @@ class VaiDemoManager:
         # TODO: replace with real perf data
         # Maybe keep canned generation for situations that perf depends arent available
         # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
-        self.graph_data = [[0] * int(1920 * 0.925) for _ in range(3)]
+        self.graph_data = [[0] * int(GRAPH_SAMPLE_SIZE) for _ in range(3)]
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
-        GLib.timeout_add(GRAPH_PERIOD_mS, self.update_graph)
+        GLib.timeout_add(GRAPH_DRAW_PERIOD_ms, self.update_graph)
 
         self.eventHandler.QProf = QProfProcess()
 
