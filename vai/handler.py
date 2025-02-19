@@ -6,7 +6,6 @@ from time import sleep
 
 import gi
 
-from .cam import camThread
 from .common import (
     APP_NAME,
     CAMERA,
@@ -20,6 +19,7 @@ from .common import (
     SEGMENTATION,
     HW_SAMPLING_PERIOD_ms,
 )
+from .gst_thread import GstPipeline
 from .psutil_profile import get_cpu_gpu_mem_temps
 
 # Locks app version, prevents warnings
@@ -277,7 +277,7 @@ class Handler:
         if index == 0:
             self.demoProcess0 = None
         else:
-            self.demoProcess0 = camThread(self.getCommand(index, 0))
+            self.demoProcess0 = GstPipeline(self.getCommand(index, 0))
             self.demoProcess0.start()
 
     def demo1_selection_changed_cb(self, combo):
@@ -287,7 +287,7 @@ class Handler:
         if index == 0:
             self.demoProcess1 = None
         else:
-            self.demoProcess1 = camThread(self.getCommand(index, 1))
+            self.demoProcess1 = GstPipeline(self.getCommand(index, 1))
             self.demoProcess1.start()
 
     def IdleUpdateLabels(self, label, text):

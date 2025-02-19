@@ -75,9 +75,9 @@ class VaiDemoManager:
         cr.set_line_width(2)
         for i in range(3):
             cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
-            cr.move_to(0, height * (1.0 - self.graph_data[i][0] / 100))
+            cr.move_to(0, height // 2 * (1.0 - self.graph_data[i][0] / 100))
             for x in range(1, len(self.graph_data[i])):
-                cr.line_to(x, height * (1.0 - self.graph_data[i][x] / 100))
+                cr.line_to(x, height // 2 * (1.0 - self.graph_data[i][x] / 100))
             cr.stroke()
 
         # --- Draw Legend ---
@@ -117,18 +117,19 @@ class VaiDemoManager:
         """Update the graph values for real-time rendering"""
         elapsed = time.time()
 
-        self.graph_data[0] = self.eventHandler.cpu_util_samples.copy()
-        self.graph_data[1] = self.eventHandler.gpu_util_samples.copy()
-        self.graph_data[2] = self.eventHandler.mem_util_samples.copy()
+        # self.graph_data[0] = self.eventHandler.cpu_util_samples.copy()
+        # self.graph_data[1] = self.eventHandler.gpu_util_samples.copy()
+        # self.graph_data[2] = self.eventHandler.mem_util_samples.copy()
         # For each wave, pop the oldest sample and append a new one
-        # for i in range(3):
-        # self.graph_data[i].pop(0)
-        # Eachwave has a different phase
-        # new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
-        # self.graph_data[i].append(new_value)
+        for i in range(3):
+            self.graph_data[i].pop(0)
+            # Eachwave has a different phase
+            new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
+            self.graph_data[i].append(new_value)
 
         # Request a redraw
-        self.eventHandler.GraphDrawArea.queue_draw()
+        self.eventHandler.GraphDrawAreaTop.queue_draw()
+        self.eventHandler.GraphDrawAreaBottom.queue_draw()
         return True
 
     def localApp(self):
@@ -160,9 +161,13 @@ class VaiDemoManager:
         self.eventHandler.BottomBox = GladeBuilder.get_object("BottomBox")
         self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
         self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
-        self.eventHandler.GraphDrawArea = GladeBuilder.get_object("GraphDrawArea")
+        self.eventHandler.GraphDrawAreaTop = GladeBuilder.get_object("GraphDrawAreaTop")
+        self.eventHandler.GraphDrawAreaBottom = GladeBuilder.get_object(
+            "GraphDrawAreaBottom"
+        )
         # TODO: Dynamic sizing, positioning
-        self.eventHandler.GraphDrawArea.connect("draw", self.on_graph_draw)
+        self.eventHandler.GraphDrawAreaTop.connect("draw", self.on_graph_draw)
+        self.eventHandler.GraphDrawAreaBottom.connect("draw", self.on_graph_draw)
         # TODO: replace with real perf data
         # Maybe keep canned generation for situations that perf depends arent available
         # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
@@ -170,7 +175,7 @@ class VaiDemoManager:
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
         GLib.timeout_add(GRAPH_DRAW_PERIOD_ms, self.update_graph)
 
-        self.eventHandler.QProf = QProfProcess()
+        # self.eventHandler.QProf = QProfProcess()
 
         # TODO: Can just put these in CSS
         self.eventHandler.MainWindow.override_background_color(
@@ -189,7 +194,7 @@ class VaiDemoManager:
         self.eventHandler.MainWindow.maximize()
         self.eventHandler.MainWindow.show_all()
 
-        self.eventHandler.QProf.start()
+        # self.eventHandler.QProf.start()
 
         Gtk.main()
 
