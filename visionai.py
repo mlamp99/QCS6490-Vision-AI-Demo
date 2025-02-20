@@ -41,6 +41,8 @@ THERMAL_GRAPH_COLORS_RGBF = {
     GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
+GRAPH_LABEL_FONT_SIZE = 14
+
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
 RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
@@ -62,7 +64,17 @@ def draw_graph_background_and_border(width, height, cr):
 
 
 def draw_axes_and_labels(
-    cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4, right_margin=25
+    cr,
+    width,
+    height,
+    x_lim,
+    y_lim,
+    x_ticks=4,
+    y_ticks=4,
+    right_margin=25,
+    bottom_margin=20,
+    x_label=None,
+    y_label=None,
 ):
     """
     Draws simple axes with labeled tick marks along bottom (x-axis) and left (y-axis).
@@ -79,6 +91,7 @@ def draw_axes_and_labels(
     cr.save()  # save the current transformation/state
 
     width -= right_margin  # Leave a little space on the right for the legend
+    height -= bottom_margin  # Leave a little space on the bottom for the x-axis labels
 
     cr.set_line_width(2)
     cr.set_source_rgb(1, 1, 1)  # white lines & text
@@ -97,7 +110,7 @@ def draw_axes_and_labels(
 
     # Set font for labels
     cr.select_font_face("Sans", 0, 0)  # (slant=0 normal, weight=0 normal)
-    cr.set_font_size(14)
+    cr.set_font_size(GRAPH_LABEL_FONT_SIZE)
 
     # --- X Ticks and Labels ---
     # e.g. if x_lim = (0,100), for 4 ticks => labeled at x=0,25,50,75,100
@@ -117,41 +130,37 @@ def draw_axes_and_labels(
         # Draw text label under the axis
         text = f"{int(x_val)}"
         te = cr.text_extents(text)
-        text_x = x_screen - te.width / 2
-        text_y = height + te.height - 4  # a little gap below the axis
-        cr.move_to(text_x, 20)
-        cr.show_text(text)
+        text_x = x_screen - te.width / 2 if i != 0 else te.width // 2
+        text_y = height + te.height + 4
+        cr.move_to(text_x, text_y)
+        if i != 0:
+            cr.show_text(text)
+        elif x_label:
+            cr.show_text(text + " " + x_label)
 
     # --- Y Ticks and Labels ---
     y_min, y_max = y_lim
     dy = (y_max - y_min) / (y_ticks or 1)
     for j in range(y_ticks + 1):
         y_val = y_min + j * dy
-        # Our data has 0 at the top, so invert so 0 = bottom visually
-        # This matches how you do "1 - data/ y_lim[1]" in your line plots
-        # or you can simply keep 0 top if you like. We'll assume 0=bottom.
         y_ratio = (y_val - y_min) / (y_max - y_min)
         y_screen = int(height - y_ratio * height)  # 0 -> bottom, height -> top
 
-        # Tick mark from (0, y_screen) to the right a bit
         tick_length = 6
         cr.move_to(width, y_screen)
         cr.line_to(width - tick_length, y_screen)
         cr.stroke()
 
-        if j == 0 or j == y_ticks:
-            continue  # Skip the first label
-        # Draw text label to the left
         text = f"{int(y_val)}"
+        if y_label and j == y_ticks:
+            text += y_label
         te = cr.text_extents(text)
-        # shift label left of the axis
-        text_x = width + te.width - 8
-        # center vertically around the tick
-        text_y = y_screen + te.height / 2
+        text_x = width + 4
+        text_y = y_screen + te.height // 2 if j != y_ticks else 15
         cr.move_to(text_x, text_y)
         cr.show_text(text)
 
-    cr.restore()  # restore the old state
+    cr.restore()
 
 
 def draw_graph_legend(label_color_map, width, cr, legend_x_width=None):
@@ -262,7 +271,8 @@ class VaiDemoManager:
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
-        right_margin = 25
+        right_margin = 40
+        bottom_margin = 20
         draw_graph_background_and_border(width, height, cr)
         # legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
@@ -274,14 +284,17 @@ class VaiDemoManager:
             x_lim,
             y_lim,
             x_ticks=4,
-            y_ticks=4,
+            y_ticks=2,
             right_margin=right_margin,
+            bottom_margin=bottom_margin,
+            x_label="seconds",
+            y_label="%",
         )
         draw_graph_data(
             self.util_data,
             UTIL_GRAPH_COLORS_RGBF,
             width - right_margin,
-            height,
+            height - bottom_margin,
             cr,
             y_lim=(0, 100),
         )
@@ -293,7 +306,8 @@ class VaiDemoManager:
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
-        right_margin = 25
+        right_margin = 40
+        bottom_margin = 20
         draw_graph_background_and_border(width, height, cr)
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
         y_lim = (0, 70)
@@ -304,8 +318,11 @@ class VaiDemoManager:
             x_lim,
             y_lim,
             x_ticks=4,
-            y_ticks=4,
+            y_ticks=2,
             right_margin=right_margin,
+            bottom_margin=bottom_margin,
+            x_label="seconds",
+            y_label="°C",
         )
         # legend_x = draw_graph_legend(
         #    THERMAL_GRAPH_COLORS_RGBF,
@@ -317,7 +334,7 @@ class VaiDemoManager:
             self.thermal_data,
             THERMAL_GRAPH_COLORS_RGBF,
             width - right_margin,
-            height,
+            height - bottom_margin,
             cr,
             y_lim=y_lim,
         )
