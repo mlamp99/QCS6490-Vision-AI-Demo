@@ -46,6 +46,11 @@ RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
 LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
 
+def lerp(a, b, t):
+    """Linear interpolation between two values"""
+    return a + t * (b - a)
+
+
 class VaiDemoManager:
     def __init__(self, port=7001):
         Gst.init(None)
@@ -56,12 +61,31 @@ class VaiDemoManager:
         self.localAppThread = threading.Thread(target=self.localApp)
         self.localAppThread.start()
 
+    def init_graph_data(self, sample_size=GRAPH_SAMPLE_SIZE):
+        """Initialize the graph data according to graph box size"""
+        self.graph_data = [[0] * sample_size for _ in range(3)]
+
     # TODO: refactor for improved maintainability
     def on_graph_draw(self, widget, cr):
         """Draw the graph on the draw area"""
-
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
+
+        # --- Draw Legend ---
+        # TODO: Scale by res?
+        legend_margin_x = 20  # Distance from the right edge
+        legend_margin_y = 10  # Distance from the top edge
+        box_size = 20  # Size of the color box
+        spacing = 30  # Vertical spacing between entries
+        legend_padding_x = 5
+        cr.select_font_face("Sans", 0, 1)  # Bold weight & normal slant
+        cr.set_font_size(20)
+
+        text_guess_width = 100
+        legend_x = width - legend_margin_x - text_guess_width - box_size
+
+        if self.graph_data is None:
+            self.init_graph_data(sample_size=legend_x)
 
         # --- Draw graph container ---
         cr.set_source_rgba(0.1, 0.1, 0.1, 0.15)  # Transparent gray container fill
@@ -71,33 +95,10 @@ class VaiDemoManager:
         cr.set_line_width(2)
         cr.stroke()
 
-        # --- Draw line graph ---
-        cr.set_line_width(2)
-        for i in range(3):
-            cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
-            cr.move_to(0, height // 2 * (1.0 - self.graph_data[i][0] / 100))
-            for x in range(1, len(self.graph_data[i])):
-                cr.line_to(x, height // 2 * (1.0 - self.graph_data[i][x] / 100))
-            cr.stroke()
-
-        # --- Draw Legend ---
-        legend_margin_x = 20  # Distance from the right edge
-        legend_margin_y = 10  # Distance from the top edge
-        box_size = 20  # Size of the color box
-        spacing = 30  # Vertical spacing between entries
-
-        # TODO: Scale by res?
-        cr.select_font_face("Sans", 0, 1)  # Bold weight & normal slant
-        cr.set_font_size(20)
-
         wave_labels = ["CPU %", "LPDDR5 %", "GPU %"]  # Labels for each wave
+        # Tuning offset variable
         for i, label in enumerate(wave_labels):
             item_y = legend_margin_y + i * spacing
-
-            # Tuning offset variable
-            # TODO: scale with res
-            text_guess_width = 90
-            legend_x = width - legend_margin_x - (text_guess_width + box_size + 10)
 
             # Draw color box
             cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
@@ -106,15 +107,31 @@ class VaiDemoManager:
 
             # Draw label text in white
             cr.set_source_rgb(1, 1, 1)
-            text_x = legend_x + box_size + 10
+            text_x = legend_x + box_size + legend_padding_x
             text_y = (
                 item_y + box_size - 5
             )  # Shift text slightly so it's vertically centered
             cr.move_to(text_x, text_y)
             cr.show_text(label)
 
+        # --- Draw line graph ---
+        # TODO: Scale by res?
+        cr.set_line_width(2)
+        for graph, color in zip(self.graph_data, GRAPH_COLORS_RGBF):
+            cr.set_source_rgb(*color)
+            cr.move_to(0, height // 2 * (1.0 - graph[0] / 100))
+            for x in range(1, len(graph)):
+                cr.line_to(
+                    x,
+                    height // 2 * (1.0 - graph[x] / 100),
+                )
+            cr.stroke()
+
     def update_graph(self):
         """Update the graph values for real-time rendering"""
+        if self.graph_data is None:  # Graph data not initialized
+            return True
+
         elapsed = time.time()
 
         # self.graph_data[0] = self.eventHandler.cpu_util_samples.copy()
@@ -171,7 +188,8 @@ class VaiDemoManager:
         # TODO: replace with real perf data
         # Maybe keep canned generation for situations that perf depends arent available
         # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
-        self.graph_data = [[0] * int(GRAPH_SAMPLE_SIZE) for _ in range(3)]
+        # self.graph_data = [[0] * int(GRAPH_SAMPLE_SIZE) for _ in range(3)]
+        self.graph_data = None
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
         GLib.timeout_add(GRAPH_DRAW_PERIOD_ms, self.update_graph)
 
