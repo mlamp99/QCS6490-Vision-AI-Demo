@@ -51,6 +51,81 @@ def lerp(a, b, t):
     return a + t * (b - a)
 
 
+def draw_graph_background_and_border(width, height, cr):
+    cr.set_source_rgba(0.1, 0.1, 0.1, 0.15)  # Transparent gray container fill
+    cr.rectangle(0, 0, width, height)
+    cr.fill_preserve()
+    cr.set_source_rgb(0.5, 0.5, 0.5)  # Gray border
+    cr.set_line_width(2)
+    cr.stroke()
+
+
+def draw_graph_legend(label_color_zip_list, width, cr, legend_x_width=None):
+    """
+    Draw the legend for the graph, returning the x position of the legend
+
+    Args:
+        label_color_zip_list: List of tuples containing the label and color for each entry
+        width: Width of the graph area
+        cr: Cairo context
+        legend_x_width: Width of the legend box. If None, the width is determined by the labels
+    """
+    # --- Draw Legend ---
+    # TODO: Scale by res?
+    legend_margin_x = 20  # Distance from the right edge
+    legend_margin_y = 10  # Distance from the top edge
+    box_size = 20  # Size of the color box
+    spacing = 30  # Vertical spacing between entries
+    legend_padding_x = 5
+
+    cr.select_font_face("Sans", 0, 1)  # Bold weight & normal slant
+    cr.set_font_size(20)
+
+    text_guess_width = 11 * max(len(label) for label, _ in label_color_zip_list)
+    legend_x = (
+        width - legend_x_width
+        if legend_x_width
+        else width - legend_margin_x - text_guess_width - box_size
+    )
+
+    # Tuning offset variable
+    for i, (label, color) in enumerate(label_color_zip_list):
+        item_y = legend_margin_y + i * spacing
+
+        # Draw color box
+        cr.set_source_rgb(*color)
+        cr.rectangle(legend_x, item_y, box_size, box_size)
+        cr.fill()
+
+        # Draw label text in white
+        cr.set_source_rgb(1, 1, 1)
+        text_x = legend_x + box_size + legend_padding_x
+        text_y = (
+            item_y + box_size - 5
+        )  # Shift text slightly so it's vertically centered
+        cr.move_to(text_x, text_y)
+        cr.show_text(label)
+
+    return legend_x
+
+
+def draw_graph_data(data_color_zip, width, height, cr):
+    # --- Draw line graph ---
+    # TODO: Scale by res?
+    cr.set_line_width(2)
+
+    # TODO: simply draw the sampled data where data_color_zip[0][0] is the y value for x=0.
+    for graph, color in data_color_zip:
+        cr.set_source_rgb(*color)
+        cr.move_to(0, height // 2 * (1.0 - graph[0] / 100))
+        for x in range(1, len(graph)):
+            cr.line_to(
+                int(lerp(0, width, x / len(graph))),
+                height // 2 * (1.0 - graph[x] / 100),
+            )
+        cr.stroke()
+
+
 class VaiDemoManager:
     def __init__(self, port=7001):
         Gst.init(None)
@@ -65,67 +140,40 @@ class VaiDemoManager:
         """Initialize the graph data according to graph box size"""
         self.graph_data = [[0] * sample_size for _ in range(3)]
 
-    # TODO: refactor for improved maintainability
-    def on_graph_draw(self, widget, cr):
+    def on_util_graph_draw(self, widget, cr):
         """Draw the graph on the draw area"""
-        width = widget.get_allocated_width()
-        height = widget.get_allocated_height()
-
-        # --- Draw Legend ---
-        # TODO: Scale by res?
-        legend_margin_x = 20  # Distance from the right edge
-        legend_margin_y = 10  # Distance from the top edge
-        box_size = 20  # Size of the color box
-        spacing = 30  # Vertical spacing between entries
-        legend_padding_x = 5
-        cr.select_font_face("Sans", 0, 1)  # Bold weight & normal slant
-        cr.set_font_size(20)
-
-        text_guess_width = 100
-        legend_x = width - legend_margin_x - text_guess_width - box_size
 
         if self.graph_data is None:
-            self.init_graph_data(sample_size=legend_x)
+            self.init_graph_data()
 
-        # --- Draw graph container ---
-        cr.set_source_rgba(0.1, 0.1, 0.1, 0.15)  # Transparent gray container fill
-        cr.rectangle(0, 0, width, height)
-        cr.fill_preserve()
-        cr.set_source_rgb(0.5, 0.5, 0.5)  # Gray border
-        cr.set_line_width(2)
-        cr.stroke()
+        width = widget.get_allocated_width()
+        height = widget.get_allocated_height()
+        draw_graph_background_and_border(width, height, cr)
+        legend_x = draw_graph_legend(
+            list(zip(["CPU %", "LPDDR5 %", "GPU %"], GRAPH_COLORS_RGBF)), width, cr, 220
+        )
+        draw_graph_data(zip(self.graph_data, GRAPH_COLORS_RGBF), legend_x, height, cr)
 
-        wave_labels = ["CPU %", "LPDDR5 %", "GPU %"]  # Labels for each wave
-        # Tuning offset variable
-        for i, label in enumerate(wave_labels):
-            item_y = legend_margin_y + i * spacing
+    def on_thermal_graph_draw(self, widget, cr):
+        """Draw the graph on the draw area"""
+        if self.graph_data is None:
+            self.init_graph_data()
 
-            # Draw color box
-            cr.set_source_rgb(*GRAPH_COLORS_RGBF[i])
-            cr.rectangle(legend_x, item_y, box_size, box_size)
-            cr.fill()
-
-            # Draw label text in white
-            cr.set_source_rgb(1, 1, 1)
-            text_x = legend_x + box_size + legend_padding_x
-            text_y = (
-                item_y + box_size - 5
-            )  # Shift text slightly so it's vertically centered
-            cr.move_to(text_x, text_y)
-            cr.show_text(label)
-
-        # --- Draw line graph ---
-        # TODO: Scale by res?
-        cr.set_line_width(2)
-        for graph, color in zip(self.graph_data, GRAPH_COLORS_RGBF):
-            cr.set_source_rgb(*color)
-            cr.move_to(0, height // 2 * (1.0 - graph[0] / 100))
-            for x in range(1, len(graph)):
-                cr.line_to(
-                    x,
-                    height // 2 * (1.0 - graph[x] / 100),
+        width = widget.get_allocated_width()
+        height = widget.get_allocated_height()
+        draw_graph_background_and_border(width, height, cr)
+        legend_x = draw_graph_legend(
+            list(
+                zip(
+                    ["CPU Temp (°C)", "LPDDR5 Temp (°C)", "GPU Temp (°C)"],
+                    GRAPH_COLORS_RGBF,
                 )
-            cr.stroke()
+            ),
+            width,
+            cr,
+            220,
+        )
+        draw_graph_data(zip(self.graph_data, GRAPH_COLORS_RGBF), legend_x, height, cr)
 
     def update_graph(self):
         """Update the graph values for real-time rendering"""
@@ -183,8 +231,10 @@ class VaiDemoManager:
             "GraphDrawAreaBottom"
         )
         # TODO: Dynamic sizing, positioning
-        self.eventHandler.GraphDrawAreaTop.connect("draw", self.on_graph_draw)
-        self.eventHandler.GraphDrawAreaBottom.connect("draw", self.on_graph_draw)
+        self.eventHandler.GraphDrawAreaTop.connect("draw", self.on_util_graph_draw)
+        self.eventHandler.GraphDrawAreaBottom.connect(
+            "draw", self.on_thermal_graph_draw
+        )
         # TODO: replace with real perf data
         # Maybe keep canned generation for situations that perf depends arent available
         # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
