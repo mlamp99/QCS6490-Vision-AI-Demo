@@ -61,7 +61,9 @@ def draw_graph_background_and_border(width, height, cr):
     cr.stroke()
 
 
-def draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4):
+def draw_axes_and_labels(
+    cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4, right_margin=25
+):
     """
     Draws simple axes with labeled tick marks along bottom (x-axis) and left (y-axis).
 
@@ -75,6 +77,8 @@ def draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4):
       y_ticks : how many segments (thus y_ticks+1 labeled steps)
     """
     cr.save()  # save the current transformation/state
+
+    width -= right_margin  # Leave a little space on the right for the legend
 
     cr.set_line_width(2)
     cr.set_source_rgb(1, 1, 1)  # white lines & text
@@ -135,13 +139,15 @@ def draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4):
         cr.line_to(width - tick_length, y_screen)
         cr.stroke()
 
+        if j == 0 or j == y_ticks:
+            continue  # Skip the first label
         # Draw text label to the left
         text = f"{int(y_val)}"
         te = cr.text_extents(text)
         # shift label left of the axis
-        text_x = width - te.width - 8
+        text_x = width + te.width - 8
         # center vertically around the tick
-        text_y = y_screen - te.height / 2
+        text_y = y_screen + te.height / 2
         cr.move_to(text_x, text_y)
         cr.show_text(text)
 
@@ -256,15 +262,25 @@ class VaiDemoManager:
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
+        right_margin = 25
         draw_graph_background_and_border(width, height, cr)
         # legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
         y_lim = (0, 100)
-        draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4)
+        draw_axes_and_labels(
+            cr,
+            width,
+            height,
+            x_lim,
+            y_lim,
+            x_ticks=4,
+            y_ticks=4,
+            right_margin=right_margin,
+        )
         draw_graph_data(
             self.util_data,
             UTIL_GRAPH_COLORS_RGBF,
-            width,
+            width - right_margin,
             height,
             cr,
             y_lim=(0, 100),
@@ -277,10 +293,20 @@ class VaiDemoManager:
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
+        right_margin = 25
         draw_graph_background_and_border(width, height, cr)
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
         y_lim = (0, 70)
-        draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4)
+        draw_axes_and_labels(
+            cr,
+            width,
+            height,
+            x_lim,
+            y_lim,
+            x_ticks=4,
+            y_ticks=4,
+            right_margin=right_margin,
+        )
         # legend_x = draw_graph_legend(
         #    THERMAL_GRAPH_COLORS_RGBF,
         #    width,
@@ -290,7 +316,7 @@ class VaiDemoManager:
         draw_graph_data(
             self.thermal_data,
             THERMAL_GRAPH_COLORS_RGBF,
-            width,
+            width - right_margin,
             height,
             cr,
             y_lim=y_lim,
