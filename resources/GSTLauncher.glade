@@ -355,7 +355,7 @@ Development Kit</property>
                 <property name="can_focus">False</property>
                 <child>
                   <object class="GtkBox">
-                    <property name="width_request">500</property>
+                    <property name="width_request">900</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>

@@ -34,11 +34,24 @@ gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gst, Gtk
 
-GRAPH_COLORS_RGBF = [
-    tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
-    tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
-]
+CPU_UTIL_KEY = "cpu %"
+MEM_UTIL_KEY = "lpddr5 %"
+GPU_UTIL_KEY = "gpu %"
+CPU_THERMAL_KEY = "cpu temp (°c)"
+MEM_THERMAL_KEY = "lpddr5 temp (°c)"
+GPU_THERMAL_KEY = "gpu temp (°c)"
+
+UTIL_GRAPH_COLORS_RGBF = {
+    CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
+    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
+    GPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
+}
+
+THERMAL_GRAPH_COLORS_RGBF = {
+    CPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
+    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
+    GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
+}
 
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
@@ -60,12 +73,12 @@ def draw_graph_background_and_border(width, height, cr):
     cr.stroke()
 
 
-def draw_graph_legend(label_color_zip_list, width, cr, legend_x_width=None):
+def draw_graph_legend(label_color_map, width, cr, legend_x_width=None):
     """
     Draw the legend for the graph, returning the x position of the legend
 
     Args:
-        label_color_zip_list: List of tuples containing the label and color for each entry
+        label_color_map: Dict of label to RGB color tuple
         width: Width of the graph area
         cr: Cairo context
         legend_x_width: Width of the legend box. If None, the width is determined by the labels
@@ -81,7 +94,7 @@ def draw_graph_legend(label_color_zip_list, width, cr, legend_x_width=None):
     cr.select_font_face("Sans", 0, 1)  # Bold weight & normal slant
     cr.set_font_size(20)
 
-    text_guess_width = 11 * max(len(label) for label, _ in label_color_zip_list)
+    text_guess_width = 11 * max(len(label) for label, _ in label_color_map.items())
     legend_x = (
         width - legend_x_width
         if legend_x_width
@@ -89,7 +102,7 @@ def draw_graph_legend(label_color_zip_list, width, cr, legend_x_width=None):
     )
 
     # Tuning offset variable
-    for i, (label, color) in enumerate(label_color_zip_list):
+    for i, (label, color) in enumerate(label_color_map.items()):
         item_y = legend_margin_y + i * spacing
 
         # Draw color box
@@ -104,24 +117,35 @@ def draw_graph_legend(label_color_zip_list, width, cr, legend_x_width=None):
             item_y + box_size - 5
         )  # Shift text slightly so it's vertically centered
         cr.move_to(text_x, text_y)
-        cr.show_text(label)
+        cr.show_text(label.upper())
 
     return legend_x
 
 
-def draw_graph_data(data_color_zip, width, height, cr):
+def draw_graph_data(data_map, data_color_map, width, height, cr, y_lim=(0, 100)):
+    """Draw the graph data on the draw area with the given colors
+
+    Args:
+        data_map: Dict of data key to list of data values
+        data_color_map: Dict of data key to RGB color tuple
+        width: Width of the graph area
+        height: Height of the graph area
+        cr: Cairo context
+        y_lim (optional): Tuple of min and max y values
+    """
+
     # --- Draw line graph ---
     # TODO: Scale by res?
     cr.set_line_width(2)
 
     # TODO: simply draw the sampled data where data_color_zip[0][0] is the y value for x=0.
-    for graph, color in data_color_zip:
-        cr.set_source_rgb(*color)
-        cr.move_to(0, height // 2 * (1.0 - graph[0] / 100))
-        for x in range(1, len(graph)):
+    for data_key, data in data_map.items():
+        cr.set_source_rgb(*data_color_map[data_key])
+        cr.move_to(0, int(lerp(y_lim[0], height, 1 - data[0] / y_lim[1])))
+        for x in range(1, len(data)):
             cr.line_to(
-                int(lerp(0, width, x / len(graph))),
-                height // 2 * (1.0 - graph[x] / 100),
+                int(lerp(0, width, x / len(data))),
+                int(lerp(y_lim[0], height, 1 - data[x] / y_lim[1])),
             )
         cr.stroke()
 
@@ -138,60 +162,80 @@ class VaiDemoManager:
 
     def init_graph_data(self, sample_size=GRAPH_SAMPLE_SIZE):
         """Initialize the graph data according to graph box size"""
-        self.graph_data = [[0] * sample_size for _ in range(3)]
+        self.util_data = {
+            CPU_UTIL_KEY: [0] * sample_size,
+            MEM_UTIL_KEY: [0] * sample_size,
+            GPU_UTIL_KEY: [0] * sample_size,
+        }
+        self.thermal_data = {
+            CPU_THERMAL_KEY: [0] * sample_size,
+            MEM_THERMAL_KEY: [0] * sample_size,
+            GPU_THERMAL_KEY: [0] * sample_size,
+        }
 
     def on_util_graph_draw(self, widget, cr):
         """Draw the graph on the draw area"""
 
-        if self.graph_data is None:
+        if self.util_data is None or self.thermal_data is None:
             self.init_graph_data()
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
         draw_graph_background_and_border(width, height, cr)
-        legend_x = draw_graph_legend(
-            list(zip(["CPU %", "LPDDR5 %", "GPU %"], GRAPH_COLORS_RGBF)), width, cr, 220
+        legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
+        draw_graph_data(
+            self.util_data,
+            UTIL_GRAPH_COLORS_RGBF,
+            legend_x,
+            height,
+            cr,
+            y_lim=(0, 100),
         )
-        draw_graph_data(zip(self.graph_data, GRAPH_COLORS_RGBF), legend_x, height, cr)
 
     def on_thermal_graph_draw(self, widget, cr):
         """Draw the graph on the draw area"""
-        if self.graph_data is None:
+        if self.thermal_data is None:
             self.init_graph_data()
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
         draw_graph_background_and_border(width, height, cr)
         legend_x = draw_graph_legend(
-            list(
-                zip(
-                    ["CPU Temp (°C)", "LPDDR5 Temp (°C)", "GPU Temp (°C)"],
-                    GRAPH_COLORS_RGBF,
-                )
-            ),
+            THERMAL_GRAPH_COLORS_RGBF,
             width,
             cr,
             220,
         )
-        draw_graph_data(zip(self.graph_data, GRAPH_COLORS_RGBF), legend_x, height, cr)
+        draw_graph_data(
+            self.thermal_data,
+            THERMAL_GRAPH_COLORS_RGBF,
+            legend_x,
+            height,
+            cr,
+            y_lim=(0, 70),
+        )
 
     def update_graph(self):
         """Update the graph values for real-time rendering"""
-        if self.graph_data is None:  # Graph data not initialized
+        if self.util_data is None:  # Graph data not initialized
             return True
 
-        elapsed = time.time()
-
-        # self.graph_data[0] = self.eventHandler.cpu_util_samples.copy()
-        # self.graph_data[1] = self.eventHandler.gpu_util_samples.copy()
-        # self.graph_data[2] = self.eventHandler.mem_util_samples.copy()
+        self.util_data[CPU_UTIL_KEY] = self.eventHandler.cpu_util_samples.copy()
+        self.util_data[GPU_UTIL_KEY] = self.eventHandler.gpu_util_samples.copy()
+        self.util_data[MEM_UTIL_KEY] = self.eventHandler.mem_util_samples.copy()
+        self.thermal_data[CPU_THERMAL_KEY] = self.eventHandler.cpu_util_samples.copy()
+        self.thermal_data[GPU_THERMAL_KEY] = self.eventHandler.gpu_util_samples.copy()
+        self.thermal_data[MEM_THERMAL_KEY] = self.eventHandler.mem_util_samples.copy()
         # For each wave, pop the oldest sample and append a new one
+        """
+        If you want to simulate a wave, modify can use the following code
+        elapsed = time.time()
         for i in range(3):
             self.graph_data[i].pop(0)
             # Eachwave has a different phase
             new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
             self.graph_data[i].append(new_value)
-
+        """
         # Request a redraw
         self.eventHandler.GraphDrawAreaTop.queue_draw()
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
@@ -235,15 +279,13 @@ class VaiDemoManager:
         self.eventHandler.GraphDrawAreaBottom.connect(
             "draw", self.on_thermal_graph_draw
         )
-        # TODO: replace with real perf data
-        # Maybe keep canned generation for situations that perf depends arent available
-        # TODO: Remove this tuning variable and determine a good fixed-data size for graphs that scales to reasonable resolutions
-        # self.graph_data = [[0] * int(GRAPH_SAMPLE_SIZE) for _ in range(3)]
-        self.graph_data = None
+        # Maybe keep canned generation for situations that perf depends arent available?
+        self.util_data = None
+        self.thermal_data = None
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
         GLib.timeout_add(GRAPH_DRAW_PERIOD_ms, self.update_graph)
 
-        # self.eventHandler.QProf = QProfProcess()
+        self.eventHandler.QProf = QProfProcess()
 
         # TODO: Can just put these in CSS
         self.eventHandler.MainWindow.override_background_color(
@@ -262,7 +304,7 @@ class VaiDemoManager:
         self.eventHandler.MainWindow.maximize()
         self.eventHandler.MainWindow.show_all()
 
-        # self.eventHandler.QProf.start()
+        self.eventHandler.QProf.start()
 
         Gtk.main()
 

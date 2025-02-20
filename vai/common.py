@@ -3,7 +3,7 @@
 import subprocess
 
 GRAPH_DRAW_PERIOD_ms = 33  # 30 FPS
-GRAPH_SAMPLE_WINDOW_SIZE_s = 60
+GRAPH_SAMPLE_WINDOW_SIZE_s = 15
 HW_SAMPLING_PERIOD_ms = 250
 
 # TODO: relate this with qprof rate

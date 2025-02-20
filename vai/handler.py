@@ -160,9 +160,6 @@ class Handler:
             "{:.2f}".format(self.QProf.get_memory_usage_pct(), 2),
         )
         self.mem_util_samples.append(self.QProf.get_memory_usage_pct())
-        print("CPU: ", self.cpu_util_samples[-1])
-        print("GPU: ", self.gpu_util_samples[-1])
-        print("MEM: ", self.mem_util_samples[-1])
         return True
 
     def close_about(self, *args):
