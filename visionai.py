@@ -3,16 +3,22 @@
 import math
 import os
 import threading
-import time
 
 import gi
 
 from vai.common import (
     APP_HEADER,
+    CPU_THERMAL_KEY,
+    CPU_UTIL_KEY,
+    GPU_THERMAL_KEY,
+    GPU_UTIL_KEY,
     GRAPH_SAMPLE_SIZE,
+    MEM_THERMAL_KEY,
+    MEM_UTIL_KEY,
     TRIA,
     TRIA_BLUE_RGBH,
     TRIA_PINK_RGBH,
+    TRIA_WHITE_RGBH,
     TRIA_YELLOW_RGBH,
     GRAPH_DRAW_PERIOD_ms,
 )
@@ -34,22 +40,15 @@ gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gst, Gtk
 
-CPU_UTIL_KEY = "cpu %"
-MEM_UTIL_KEY = "lpddr5 %"
-GPU_UTIL_KEY = "gpu %"
-CPU_THERMAL_KEY = "cpu temp (°c)"
-MEM_THERMAL_KEY = "lpddr5 temp (°c)"
-GPU_THERMAL_KEY = "gpu temp (°c)"
-
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
+    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
     GPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 THERMAL_GRAPH_COLORS_RGBF = {
     CPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
+    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
     GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
@@ -220,12 +219,24 @@ class VaiDemoManager:
         if self.util_data is None:  # Graph data not initialized
             return True
 
-        self.util_data[CPU_UTIL_KEY] = self.eventHandler.cpu_util_samples.copy()
-        self.util_data[GPU_UTIL_KEY] = self.eventHandler.gpu_util_samples.copy()
-        self.util_data[MEM_UTIL_KEY] = self.eventHandler.mem_util_samples.copy()
-        self.thermal_data[CPU_THERMAL_KEY] = self.eventHandler.cpu_util_samples.copy()
-        self.thermal_data[GPU_THERMAL_KEY] = self.eventHandler.gpu_util_samples.copy()
-        self.thermal_data[MEM_THERMAL_KEY] = self.eventHandler.mem_util_samples.copy()
+        self.util_data[CPU_UTIL_KEY] = self.eventHandler.sample_data[
+            CPU_UTIL_KEY
+        ].copy()
+        self.util_data[GPU_UTIL_KEY] = self.eventHandler.sample_data[
+            GPU_UTIL_KEY
+        ].copy()
+        self.util_data[MEM_UTIL_KEY] = self.eventHandler.sample_data[
+            MEM_UTIL_KEY
+        ].copy()
+        self.thermal_data[CPU_THERMAL_KEY] = self.eventHandler.sample_data[
+            CPU_THERMAL_KEY
+        ].copy()
+        self.thermal_data[GPU_THERMAL_KEY] = self.eventHandler.sample_data[
+            GPU_THERMAL_KEY
+        ].copy()
+        self.thermal_data[MEM_THERMAL_KEY] = self.eventHandler.sample_data[
+            MEM_THERMAL_KEY
+        ].copy()
         # For each wave, pop the oldest sample and append a new one
         """
         If you want to simulate a wave, modify can use the following code
