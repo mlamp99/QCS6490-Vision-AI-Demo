@@ -6,22 +6,11 @@ import threading
 
 import gi
 
-from vai.common import (
-    APP_HEADER,
-    CPU_THERMAL_KEY,
-    CPU_UTIL_KEY,
-    GPU_THERMAL_KEY,
-    GPU_UTIL_KEY,
-    GRAPH_SAMPLE_SIZE,
-    MEM_THERMAL_KEY,
-    MEM_UTIL_KEY,
-    TRIA,
-    TRIA_BLUE_RGBH,
-    TRIA_PINK_RGBH,
-    TRIA_WHITE_RGBH,
-    TRIA_YELLOW_RGBH,
-    GRAPH_DRAW_PERIOD_ms,
-)
+from vai.common import (APP_HEADER, CPU_THERMAL_KEY, CPU_UTIL_KEY,
+                        GPU_THERMAL_KEY, GPU_UTIL_KEY, GRAPH_SAMPLE_SIZE,
+                        MEM_THERMAL_KEY, MEM_UTIL_KEY, TRIA, TRIA_BLUE_RGBH,
+                        TRIA_PINK_RGBH, TRIA_WHITE_RGBH, TRIA_YELLOW_RGBH,
+                        GRAPH_DRAW_PERIOD_ms, GRAPH_SAMPLE_WINDOW_SIZE_s)
 from vai.handler import Handler
 from vai.qprofile import QProfProcess
 
@@ -70,6 +59,93 @@ def draw_graph_background_and_border(width, height, cr):
     cr.set_source_rgb(0.5, 0.5, 0.5)  # Gray border
     cr.set_line_width(2)
     cr.stroke()
+
+
+def draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4):
+    """
+    Draws simple axes with labeled tick marks along bottom (x-axis) and left (y-axis).
+
+    Args:
+      cr      : Cairo context
+      width   : total width of the drawing area
+      height  : total height of the drawing area
+      x_lim   : (xmin, xmax) for the data domain you want to label
+      y_lim   : (ymin, ymax) for the data domain (like (0, 100))
+      x_ticks : how many segments (thus x_ticks+1 labeled steps)
+      y_ticks : how many segments (thus y_ticks+1 labeled steps)
+    """
+    cr.save()  # save the current transformation/state
+
+    cr.set_line_width(2)
+    cr.set_source_rgb(1, 1, 1)  # white lines & text
+
+    # --- Draw X-axis (bottom) ---
+    # Move from (0, height) to (width, height)
+    cr.move_to(0, height)
+    cr.line_to(width, height)
+    cr.stroke()
+
+    # --- Draw Y-axis (left) ---
+    # Move from (0, height) to (0, 0)
+    cr.move_to(0, height)
+    cr.line_to(0, 0)
+    cr.stroke()
+
+    # Set font for labels
+    cr.select_font_face("Sans", 0, 0)  # (slant=0 normal, weight=0 normal)
+    cr.set_font_size(14)
+
+    # --- X Ticks and Labels ---
+    # e.g. if x_lim = (0,100), for 4 ticks => labeled at x=0,25,50,75,100
+    x_min, x_max = x_lim
+    dx = (x_max - x_min) / (x_ticks or 1)
+    for i in range(x_ticks + 1):
+        x_val = x_min + i * dx
+        # Convert data → screen coordinate: 0..width
+        x_screen = int((x_val - x_min) / (x_max - x_min) * width)
+
+        # Tick mark from (x_screen, height) up a bit
+        tick_length = 6
+        cr.move_to(x_screen, height)
+        cr.line_to(x_screen, height - tick_length)
+        cr.stroke()
+
+        # Draw text label under the axis
+        text = f"{int(x_val)}"
+        te = cr.text_extents(text)
+        text_x = x_screen - te.width / 2
+        text_y = height + te.height - 4  # a little gap below the axis
+        cr.move_to(text_x, 20)
+        cr.show_text(text)
+
+    # --- Y Ticks and Labels ---
+    y_min, y_max = y_lim
+    dy = (y_max - y_min) / (y_ticks or 1)
+    for j in range(y_ticks + 1):
+        y_val = y_min + j * dy
+        # Our data has 0 at the top, so invert so 0 = bottom visually
+        # This matches how you do "1 - data/ y_lim[1]" in your line plots
+        # or you can simply keep 0 top if you like. We'll assume 0=bottom.
+        y_ratio = (y_val - y_min) / (y_max - y_min)
+        y_screen = int(height - y_ratio * height)  # 0 -> bottom, height -> top
+
+        # Tick mark from (0, y_screen) to the right a bit
+        tick_length = 6
+        cr.move_to(width, y_screen)
+        cr.line_to(width - tick_length, y_screen)
+        cr.stroke()
+
+        # Draw text label to the left
+        text = f"{int(y_val)}"
+        te = cr.text_extents(text)
+        # shift label left of the axis
+        text_x = width - te.width - 8
+        # center vertically around the tick
+        text_y = y_screen - te.height / 2
+        cr.move_to(text_x, text_y)
+        cr.show_text(text)
+
+    cr.restore()  # restore the old state
 
 
 def draw_graph_legend(label_color_map, width, cr, legend_x_width=None):
@@ -181,11 +257,14 @@ class VaiDemoManager:
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
         draw_graph_background_and_border(width, height, cr)
-        legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
+        # legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
+        x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
+        y_lim = (0, 100)
+        draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4)
         draw_graph_data(
             self.util_data,
             UTIL_GRAPH_COLORS_RGBF,
-            legend_x,
+            width,
             height,
             cr,
             y_lim=(0, 100),
@@ -199,19 +278,22 @@ class VaiDemoManager:
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
         draw_graph_background_and_border(width, height, cr)
-        legend_x = draw_graph_legend(
-            THERMAL_GRAPH_COLORS_RGBF,
-            width,
-            cr,
-            220,
-        )
+        x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
+        y_lim = (0, 70)
+        draw_axes_and_labels(cr, width, height, x_lim, y_lim, x_ticks=4, y_ticks=4)
+        # legend_x = draw_graph_legend(
+        #    THERMAL_GRAPH_COLORS_RGBF,
+        #    width,
+        #    cr,
+        #    220,
+        # )
         draw_graph_data(
             self.thermal_data,
             THERMAL_GRAPH_COLORS_RGBF,
-            legend_x,
+            width,
             height,
             cr,
-            y_lim=(0, 70),
+            y_lim=y_lim,
         )
 
     def update_graph(self):
