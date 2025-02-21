@@ -344,24 +344,24 @@ class VaiDemoManager:
         if self.util_data is None:  # Graph data not initialized
             return True
 
-        self.util_data[CPU_UTIL_KEY] = self.eventHandler.sample_data[
+        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[
             CPU_UTIL_KEY
-        ].copy()
-        self.util_data[GPU_UTIL_KEY] = self.eventHandler.sample_data[
+        ])
+        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[
             GPU_UTIL_KEY
-        ].copy()
-        self.util_data[MEM_UTIL_KEY] = self.eventHandler.sample_data[
+        ])
+        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[
             MEM_UTIL_KEY
-        ].copy()
-        self.thermal_data[CPU_THERMAL_KEY] = self.eventHandler.sample_data[
+        ])
+        self.thermal_data[CPU_THERMAL_KEY].append(self.eventHandler.sample_data[
             CPU_THERMAL_KEY
-        ].copy()
-        self.thermal_data[GPU_THERMAL_KEY] = self.eventHandler.sample_data[
+        ])
+        self.thermal_data[GPU_THERMAL_KEY].append(self.eventHandler.sample_data[
             GPU_THERMAL_KEY
-        ].copy()
-        self.thermal_data[MEM_THERMAL_KEY] = self.eventHandler.sample_data[
+        ])
+        self.thermal_data[MEM_THERMAL_KEY].append(self.eventHandler.sample_data[
             MEM_THERMAL_KEY
-        ].copy()
+        ])
         # For each wave, pop the oldest sample and append a new one
         """
         If you want to simulate a wave, modify can use the following code

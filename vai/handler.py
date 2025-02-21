@@ -41,10 +41,6 @@ MAX_WINDOW_HEIGHT = 720
 DUAL_WINDOW_DEMOS = ["depth segmentation"]
 
 
-def make_samples_deque():
-    return collections.deque([0] * GRAPH_SAMPLE_SIZE, maxlen=GRAPH_SAMPLE_SIZE)
-
-
 class Handler:
     def __init__(self, display_fps_metrics=True):
         self.demoList = [
@@ -76,12 +72,12 @@ class Handler:
 
         # TODO: protect with sync primitive?
         self.sample_data = {
-            CPU_UTIL_KEY: make_samples_deque(),
-            MEM_UTIL_KEY: make_samples_deque(),
-            GPU_UTIL_KEY: make_samples_deque(),
-            CPU_THERMAL_KEY: make_samples_deque(),
-            MEM_THERMAL_KEY: make_samples_deque(),
-            GPU_THERMAL_KEY: make_samples_deque(),
+            CPU_UTIL_KEY: 0,
+            MEM_UTIL_KEY: 0,
+            GPU_UTIL_KEY: 0,
+            CPU_THERMAL_KEY: 0,
+            MEM_THERMAL_KEY: 0,
+            GPU_THERMAL_KEY: 0,
         }
         # TODO: scan_for_connected_cameras() to include MIPI
         self.USBCameraCount = self.scan_for_connected_usb_cameras()
@@ -92,8 +88,7 @@ class Handler:
         print(f"Using CAM2: {self.cam2}")
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
-        GObject.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_loads)
-        GObject.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_temps)
+        GObject.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_sample_data)
 
     def scan_for_connected_usb_cameras(self):
         """Scans for cameras via v4l"""
@@ -128,21 +123,21 @@ class Handler:
 
     def update_temps(self):
         cpu_temp, gpu_temp, mem_temp = get_cpu_gpu_mem_temps()
-        self.sample_data[CPU_THERMAL_KEY].append(cpu_temp)
+        self.sample_data[CPU_THERMAL_KEY] = cpu_temp
         if cpu_temp is not None:
             GLib.idle_add(
                 self.IdleUpdateLabels,
                 self.CPU_temp,
                 "{:.2f}".format(cpu_temp, 2),
             )
-        self.sample_data[GPU_THERMAL_KEY].append(gpu_temp)
+        self.sample_data[GPU_THERMAL_KEY] = gpu_temp
         if gpu_temp is not None:
             GLib.idle_add(
                 self.IdleUpdateLabels,
                 self.GPU_temp,
                 "{:.2f}".format(gpu_temp, 2),
             )
-        self.sample_data[MEM_THERMAL_KEY].append(mem_temp)
+        self.sample_data[MEM_THERMAL_KEY] = mem_temp
         if mem_temp is not None:
             GLib.idle_add(
                 self.IdleUpdateLabels,
@@ -153,25 +148,33 @@ class Handler:
         return True
 
     def update_loads(self):
-        self.sample_data[CPU_UTIL_KEY].append(self.QProf.get_cpu_usage_pct())
+        cpu_util, gpu_util, mem_util = (
+            self.QProf.get_cpu_usage_pct(),
+            self.QProf.get_gpu_usage_pct(),
+            self.QProf.get_memory_usage_pct(),
+        )
+        self.sample_data[CPU_UTIL_KEY] = cpu_util
+        self.sample_data[GPU_UTIL_KEY] = gpu_util
+        self.sample_data[MEM_UTIL_KEY] = mem_util
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.CPU_load,
-            "{:.2f}".format(self.QProf.get_cpu_usage_pct(), 2),
+            "{:.2f}".format(cpu_util, 2),
         )
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.GPU_load,
-            "{:.2f}".format(self.QProf.get_gpu_usage_pct(), 2),
+            "{:.2f}".format(gpu_util, 2),
         )
-        self.sample_data[GPU_UTIL_KEY].append(self.QProf.get_gpu_usage_pct())
         GLib.idle_add(
             self.IdleUpdateLabels,
             self.MEM_load,
-            "{:.2f}".format(self.QProf.get_memory_usage_pct(), 2),
+            "{:.2f}".format(mem_util, 2),
         )
-        self.sample_data[MEM_UTIL_KEY].append(self.QProf.get_memory_usage_pct())
         return True
+
+    def update_sample_data(self):
+        return self.update_temps() and self.update_loads()
 
     def close_about(self, *args):
         self.aboutWindow.hide()

@@ -2,6 +2,8 @@ import re
 import subprocess
 import threading
 
+from vai.common import HW_SAMPLING_PERIOD_ms
+
 # NOTE: Its expected that you have QProf installed on your device with the necessary exports/pathing enabled as well
 # refer to QC documentation as necessary
 
@@ -24,14 +26,14 @@ class QProfProcess(threading.Thread):
         )
         while self.enabled:
             p = subprocess.Popen(
-                "qprof \
+                f"qprof \
                                     --profile \
                                     --profile-type async \
                                     --result-format CSV \
                                     --capabilities-list profiler:apps-proc-cpu-metrics profiler:proc-gpu-specific-metrics profiler:apps-proc-mem-metrics \
                                     --profile-time 10 \
-                                    --sampling-rate 50 \
-                                    --streaming-rate 500 \
+                                    --sampling-rate {HW_SAMPLING_PERIOD_ms} \
+                                    --streaming-rate {HW_SAMPLING_PERIOD_ms} \
                                     --live \
                                     --metric-id-list 4648 4616 4865".split(),
                 shell=False,
@@ -50,15 +52,12 @@ class QProfProcess(threading.Thread):
                 if line.find(b"CPU Total Load:") > -1:
                     result = re.search(b"CPU Total Load:(.*)%", line)
                     self.CPU = float(result.group(1))
-                    # print ('CPU Usage', self.CPU, '%')
                 elif line.find(b"GPU Utilization:") > -1:
                     result = re.search(b"GPU Utilization:(.*)%", line)
                     self.GPU = float(result.group(1))
-                    # print ('GPU Usage', self.GPU, '%')
                 elif line.find(b"Memory Usage %:") > -1:
                     result = re.search(b"Memory Usage %:(.*)%", line)
                     self.MEM = float(result.group(1))
-                    # print ('MEM Usage', self.MEM, '%')
 
             # cleanup output files
             subprocess.call(
