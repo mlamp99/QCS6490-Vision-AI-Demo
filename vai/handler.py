@@ -1,4 +1,3 @@
-import collections
 import signal
 import subprocess
 import sys

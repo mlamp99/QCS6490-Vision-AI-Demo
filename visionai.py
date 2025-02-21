@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import collections
 import math
 import os
 import threading
@@ -27,7 +28,7 @@ from vai.qprofile import QProfProcess
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, GLib, Gst, Gtk
+from gi.repository import Gdk, Gst, Gtk
 
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
@@ -253,14 +254,14 @@ class VaiDemoManager:
     def init_graph_data(self, sample_size=GRAPH_SAMPLE_SIZE):
         """Initialize the graph data according to graph box size"""
         self.util_data = {
-            CPU_UTIL_KEY: [0] * sample_size,
-            MEM_UTIL_KEY: [0] * sample_size,
-            GPU_UTIL_KEY: [0] * sample_size,
+            CPU_UTIL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
+            MEM_UTIL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
+            GPU_UTIL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
         }
         self.thermal_data = {
-            CPU_THERMAL_KEY: [0] * sample_size,
-            MEM_THERMAL_KEY: [0] * sample_size,
-            GPU_THERMAL_KEY: [0] * sample_size,
+            CPU_THERMAL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
+            MEM_THERMAL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
+            GPU_THERMAL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
         }
 
     def on_util_graph_draw(self, widget, cr):
@@ -268,6 +269,10 @@ class VaiDemoManager:
 
         if self.util_data is None or self.thermal_data is None:
             self.init_graph_data()
+
+        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
+        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
+        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
@@ -299,10 +304,24 @@ class VaiDemoManager:
             y_lim=(0, 100),
         )
 
+        self.eventHandler.GraphDrawAreaTop.queue_draw()
+
+        return True
+
     def on_thermal_graph_draw(self, widget, cr):
         """Draw the graph on the draw area"""
         if self.thermal_data is None:
             self.init_graph_data()
+
+        self.thermal_data[CPU_THERMAL_KEY].append(
+            self.eventHandler.sample_data[CPU_THERMAL_KEY]
+        )
+        self.thermal_data[GPU_THERMAL_KEY].append(
+            self.eventHandler.sample_data[GPU_THERMAL_KEY]
+        )
+        self.thermal_data[MEM_THERMAL_KEY].append(
+            self.eventHandler.sample_data[MEM_THERMAL_KEY]
+        )
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
@@ -339,29 +358,26 @@ class VaiDemoManager:
             y_lim=y_lim,
         )
 
+        self.eventHandler.GraphDrawAreaBottom.queue_draw()
+        return True
+
     def update_graph(self):
         """Update the graph values for real-time rendering"""
         if self.util_data is None:  # Graph data not initialized
             return True
 
-        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[
-            CPU_UTIL_KEY
-        ])
-        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[
-            GPU_UTIL_KEY
-        ])
-        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[
-            MEM_UTIL_KEY
-        ])
-        self.thermal_data[CPU_THERMAL_KEY].append(self.eventHandler.sample_data[
-            CPU_THERMAL_KEY
-        ])
-        self.thermal_data[GPU_THERMAL_KEY].append(self.eventHandler.sample_data[
-            GPU_THERMAL_KEY
-        ])
-        self.thermal_data[MEM_THERMAL_KEY].append(self.eventHandler.sample_data[
-            MEM_THERMAL_KEY
-        ])
+        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
+        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
+        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
+        self.thermal_data[CPU_THERMAL_KEY].append(
+            self.eventHandler.sample_data[CPU_THERMAL_KEY]
+        )
+        self.thermal_data[GPU_THERMAL_KEY].append(
+            self.eventHandler.sample_data[GPU_THERMAL_KEY]
+        )
+        self.thermal_data[MEM_THERMAL_KEY].append(
+            self.eventHandler.sample_data[MEM_THERMAL_KEY]
+        )
         # For each wave, pop the oldest sample and append a new one
         """
         If you want to simulate a wave, modify can use the following code
@@ -419,7 +435,7 @@ class VaiDemoManager:
         self.util_data = None
         self.thermal_data = None
         self.phases = [0, math.pi / 3, 2 * math.pi / 3]
-        GLib.timeout_add(GRAPH_DRAW_PERIOD_ms, self.update_graph)
+        # GLib.timeout_add(GRAPH_DRAW_PERIOD_ms, self.update_graph)
 
         self.eventHandler.QProf = QProfProcess()
 
