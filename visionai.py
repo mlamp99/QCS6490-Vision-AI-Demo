@@ -329,7 +329,7 @@ class VaiDemoManager:
         bottom_margin = 20
         draw_graph_background_and_border(width, height, cr)
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
-        y_lim = (0, 70)
+        y_lim = (30, 115)
         draw_axes_and_labels(
             cr,
             width,
