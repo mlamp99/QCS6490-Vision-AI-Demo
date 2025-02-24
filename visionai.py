@@ -448,7 +448,7 @@ class VaiDemoManager:
         )
 
         self.eventHandler.BottomBox.override_background_color(
-            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0.5)
+            Gtk.StateType.NORMAL, Gdk.RGBA(23 / 255, 23 / 255, 23 / 255, 0.8)
         )
 
         self.eventHandler.MainWindow.set_decorated(False)
