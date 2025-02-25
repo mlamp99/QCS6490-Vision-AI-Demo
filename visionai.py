@@ -65,42 +65,6 @@ RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
 LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
 
-def resize_graphs_dynamically(parent_widget, _allocation, data):
-    """Resize graphing areas to be uniform and fill remaining space. To be called on size-allocate signal."""
-
-    # Total width will be a function of the current lifecycle of the widget, it may have a surprising value
-    total_width = parent_widget.get_allocated_width()
-    if total_width == 0:
-        return
-
-    # These datagrid widths are what determine the remaining space
-    data_grid = GladeBuilder.get_object("DataGrid")
-    data_grid1 = GladeBuilder.get_object("DataGrid1")
-    if not data_grid or not data_grid1:
-        return
-
-    remaining_graph_width = total_width - (
-        data_grid.get_allocated_width() + data_grid1.get_allocated_width()
-    )
-    # Account for margins that arent included in the allocated width
-    remaining_graph_width -= data_grid.get_margin_start() + data_grid.get_margin_end()
-    remaining_graph_width -= data_grid1.get_margin_start() + data_grid1.get_margin_end()
-
-    half = remaining_graph_width // 2
-    if half < 0:
-        return
-
-    graph_top = data.eventHandler.GraphDrawAreaTop
-    graph_bottom = data.eventHandler.GraphDrawAreaBottom
-    # Only resize if changed, otherwise it can cause a loop
-    if (
-        graph_top.get_allocated_width() != half
-        or graph_bottom.get_allocated_width() != half
-    ):
-        graph_top.set_size_request(half, -1)
-        graph_bottom.set_size_request(half, -1)
-
-
 class VaiDemoManager:
     def __init__(self, port=7001):
         Gst.init(None)
@@ -110,6 +74,47 @@ class VaiDemoManager:
 
         self.localAppThread = threading.Thread(target=self.localApp)
         self.localAppThread.start()
+
+    def resize_graphs_dynamically(self, parent_widget, _allocation):
+        """Resize graphing areas to be uniform and fill remaining space. To be called on size-allocate signal."""
+
+        # Total width will be a function of the current lifecycle of the widget, it may have a surprising value
+        total_width = parent_widget.get_allocated_width()
+        total_height = parent_widget.get_allocated_height()
+        self.main_window_dims = (total_width, total_height)
+        if total_width == 0:
+            return
+
+        # These datagrid widths are what determine the remaining space
+        data_grid = GladeBuilder.get_object("DataGrid")
+        data_grid1 = GladeBuilder.get_object("DataGrid1")
+        if not data_grid or not data_grid1:
+            return
+
+        remaining_graph_width = total_width - (
+            data_grid.get_allocated_width() + data_grid1.get_allocated_width()
+        )
+        # Account for margins that arent included in the allocated width
+        remaining_graph_width -= (
+            data_grid.get_margin_start() + data_grid.get_margin_end()
+        )
+        remaining_graph_width -= (
+            data_grid1.get_margin_start() + data_grid1.get_margin_end()
+        )
+
+        half = remaining_graph_width // 2
+        if half < 0:
+            return
+
+        graph_top = self.eventHandler.GraphDrawAreaTop
+        graph_bottom = self.eventHandler.GraphDrawAreaBottom
+        # Only resize if changed, otherwise it can cause a loop
+        if (
+            graph_top.get_allocated_width() != half
+            or graph_bottom.get_allocated_width() != half
+        ):
+            graph_top.set_size_request(half, -1)
+            graph_bottom.set_size_request(half, -1)
 
     def init_graph_data(self, sample_size=GRAPH_SAMPLE_SIZE):
         """Initialize the graph data according to graph box size"""
@@ -136,13 +141,14 @@ class VaiDemoManager:
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
-        right_margin = 40
-        bottom_margin = 20
-        draw_graph_background_and_border(width, height, cr)
+
+        draw_graph_background_and_border(
+            width, height, cr, res_tuple=self.main_window_dims
+        )
         # legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
         y_lim = (0, 100)
-        draw_axes_and_labels(
+        x_axis, y_axis = draw_axes_and_labels(
             cr,
             width,
             height,
@@ -150,16 +156,16 @@ class VaiDemoManager:
             y_lim,
             x_ticks=4,
             y_ticks=2,
-            right_margin=right_margin,
-            bottom_margin=bottom_margin,
+            dynamic_margin=True,
             x_label="seconds",
             y_label="%",
+            res_tuple=self.main_window_dims,
         )
         draw_graph_data(
             self.util_data,
             UTIL_GRAPH_COLORS_RGBF,
-            width - right_margin,
-            height - bottom_margin,
+            x_axis,
+            y_axis,
             cr,
             y_lim=(0, 100),
         )
@@ -185,12 +191,12 @@ class VaiDemoManager:
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
-        right_margin = 40
-        bottom_margin = 20
-        draw_graph_background_and_border(width, height, cr)
+        draw_graph_background_and_border(
+            width, height, cr, res_tuple=self.main_window_dims
+        )
         x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
         y_lim = (30, 115)
-        draw_axes_and_labels(
+        x_axis, y_axis = draw_axes_and_labels(
             cr,
             width,
             height,
@@ -198,24 +204,19 @@ class VaiDemoManager:
             y_lim,
             x_ticks=4,
             y_ticks=2,
-            right_margin=right_margin,
-            bottom_margin=bottom_margin,
+            dynamic_margin=True,
             x_label="seconds",
             y_label="°C",
+            res_tuple=self.main_window_dims,
         )
-        # legend_x = draw_graph_legend(
-        #    THERMAL_GRAPH_COLORS_RGBF,
-        #    width,
-        #    cr,
-        #    220,
-        # )
         draw_graph_data(
             self.thermal_data,
             THERMAL_GRAPH_COLORS_RGBF,
-            width - right_margin,
-            height - bottom_margin,
+            x_axis,
+            y_axis,
             cr,
             y_lim=y_lim,
+            res_tuple=self.main_window_dims,
         )
 
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
@@ -253,30 +254,6 @@ class VaiDemoManager:
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
         return True
 
-    def resize_graphs_cb(self):
-        print("Size allocated")
-
-        total_width = self.eventHandler.MainWindow.get_allocated_width()
-        remaining_graph_width = (
-            total_width
-            - GladeBuilder.get_object("DataGrid").get_allocated_width()
-            - GladeBuilder.get_object("DataGrid1").get_allocated_width()
-        )
-        print(f"Total width: {total_width}")
-        print(f"Remaining graph width: {remaining_graph_width}")
-        print(
-            f"DataGrid width: {GladeBuilder.get_object('DataGrid').get_allocated_width()}"
-        )
-        print(
-            f"DataGrid1 width: {GladeBuilder.get_object('DataGrid1').get_allocated_width()}"
-        )
-        self.eventHandler.GraphDrawAreaTop.set_size_request(
-            remaining_graph_width // 2, -1
-        )
-        self.eventHandler.GraphDrawAreaBottom.set_size_request(
-            remaining_graph_width // 2, -1
-        )
-
     def localApp(self):
         global GladeBuilder
 
@@ -293,7 +270,7 @@ class VaiDemoManager:
         self.eventHandler.MainWindow = GladeBuilder.get_object("mainWindow")
         self.eventHandler.MainWindow.connect("destroy", self.eventHandler.exit)
         self.eventHandler.MainWindow.connect(
-            "size-allocate", resize_graphs_dynamically, self
+            "size-allocate", self.resize_graphs_dynamically
         )
         self.eventHandler.aboutWindow = GladeBuilder.get_object("aboutWindow")
         self.eventHandler.FPSRate0 = GladeBuilder.get_object("FPS_rate_0")
