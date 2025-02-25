@@ -215,8 +215,6 @@
     </data>
   </object>
   <object class="GtkWindow" id="mainWindow">
-    <property name="width_request">960</property>
-    <property name="height_request">800</property>
     <property name="can_focus">False</property>
     <signal name="destroy" handler="on_mainWindow_destroy" swapped="no"/>
     <child type="titlebar">
@@ -560,13 +558,15 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="valign">end</property>
+            <property name="hexpand">True</property>
+            <property name="resize_mode">immediate</property>
             <child>
               <object class="GtkDrawingArea" id="GraphDrawAreaBottom">
                 <property name="name">GraphDrawAreaBottom</property>
                 <property name="visible">True</property>
                 <property name="app_paintable">True</property>
                 <property name="can_focus">False</property>
-                <property name="hexpand">True</property>
+                <property name="halign">start</property>
                 <property name="vexpand">True</property>
               </object>
               <packing>
@@ -576,17 +576,15 @@
             </child>
             <child>
               <object class="GtkGrid" id="DataGrid">
-                <property name="width_request">100</property>
+                <property name="width_request">0</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="halign">end</property>
-                <property name="margin_left">10</property>
-                <property name="margin_right">10</property>
-                <property name="margin_bottom">5</property>
-                <property name="hexpand">False</property>
+                <property name="halign">start</property>
+                <property name="margin_left">2</property>
+                <property name="margin_right">25</property>
                 <property name="orientation">vertical</property>
                 <property name="row_spacing">2</property>
-                <property name="column_spacing">23</property>
+                <property name="column_spacing">8</property>
                 <property name="row_homogeneous">True</property>
                 <child>
                   <object class="GtkLabel">
@@ -594,7 +592,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">CPU Usage, Avg (%)</property>
+                    <property name="label" translatable="yes">CPU Usage, Avg</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -627,7 +625,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">LPDDR5 Usage (%)</property>
+                    <property name="label" translatable="yes">LPDDR5 Usage</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -643,7 +641,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">GPU Usage (%)</property>
+                    <property name="label" translatable="yes">GPU Usage</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -676,6 +674,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
+                    <property name="hexpand">True</property>
                     <property name="label" translatable="yes">0</property>
                     <property name="single_line_mode">True</property>
                     <style>
@@ -720,30 +719,78 @@
                     <property name="top_attach">2</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">%</property>
+                    <style>
+                      <class name="label_l"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">%</property>
+                    <style>
+                      <class name="label_l"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">%</property>
+                    <style>
+                      <class name="label_l"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
               </object>
               <packing>
-                <property name="left_attach">4</property>
+                <property name="left_attach">3</property>
                 <property name="top_attach">1</property>
               </packing>
             </child>
             <child>
               <object class="GtkGrid" id="DataGrid1">
-                <property name="width_request">100</property>
+                <property name="width_request">0</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="halign">end</property>
-                <property name="margin_left">10</property>
-                <property name="margin_right">10</property>
-                <property name="margin_bottom">5</property>
-                <property name="hexpand">False</property>
+                <property name="halign">start</property>
+                <property name="margin_left">2</property>
+                <property name="margin_right">25</property>
                 <property name="orientation">vertical</property>
                 <property name="row_spacing">2</property>
-                <property name="column_spacing">23</property>
+                <property name="column_spacing">8</property>
                 <property name="row_homogeneous">True</property>
                 <child>
                   <object class="GtkImage">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="halign">center</property>
+                    <property name="valign">center</property>
                     <property name="pixbuf">legend_pink.png</property>
                   </object>
                   <packing>
@@ -779,7 +826,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">CPU Avg °C</property>
+                    <property name="label" translatable="yes">CPU Avg</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -812,7 +859,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">LPDDR5 °C</property>
+                    <property name="label" translatable="yes">LPDDR5</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -845,7 +892,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">GPU °C</property>
+                    <property name="label" translatable="yes">GPU</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -869,6 +916,54 @@
                   </object>
                   <packing>
                     <property name="left_attach">2</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">°C</property>
+                    <style>
+                      <class name="label_l"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">°C</property>
+                    <style>
+                      <class name="label_l"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="halign">start</property>
+                    <property name="valign">center</property>
+                    <property name="label" translatable="yes">°C</property>
+                    <style>
+                      <class name="label_l"/>
+                    </style>
+                  </object>
+                  <packing>
+                    <property name="left_attach">3</property>
                     <property name="top_attach">2</property>
                   </packing>
                 </child>
@@ -906,7 +1001,7 @@
                 </style>
               </object>
               <packing>
-                <property name="left_attach">3</property>
+                <property name="left_attach">2</property>
                 <property name="top_attach">0</property>
               </packing>
             </child>
@@ -916,19 +1011,13 @@
                 <property name="visible">True</property>
                 <property name="app_paintable">True</property>
                 <property name="can_focus">False</property>
-                <property name="hexpand">True</property>
+                <property name="halign">start</property>
                 <property name="vexpand">True</property>
               </object>
               <packing>
-                <property name="left_attach">3</property>
+                <property name="left_attach">2</property>
                 <property name="top_attach">1</property>
               </packing>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
             </child>
             <child>
               <placeholder/>
