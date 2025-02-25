@@ -84,6 +84,11 @@ TRIA = r"""
 """
 
 
+def lerp(a, b, t):
+    """Linear interpolation between two values"""
+    return a + t * (b - a)
+
+
 def app_version():
     """Get the latest tag or commit hash if possible, unknown otherwise"""
 
