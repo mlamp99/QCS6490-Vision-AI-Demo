@@ -596,7 +596,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">CPU Usage, total (%)</property>
+                    <property name="label" translatable="yes">CPU Usage, Avg (%)</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -781,7 +781,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">CPU Temp, ave (°C)</property>
+                    <property name="label" translatable="yes">CPU Avg °C</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -814,7 +814,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">LPDDR5 Temp (°C)</property>
+                    <property name="label" translatable="yes">LPDDR5 °C</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -847,7 +847,7 @@
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>
                     <property name="valign">center</property>
-                    <property name="label" translatable="yes">GPU Temp (°C)</property>
+                    <property name="label" translatable="yes">GPU °C</property>
                     <style>
                       <class name="label_l"/>
                     </style>
@@ -897,7 +897,7 @@
                 <property name="can_focus">False</property>
                 <property name="halign">center</property>
                 <property name="valign">center</property>
-                <property name="label" translatable="yes">Tempertures</property>
+                <property name="label" translatable="yes">System Thermals</property>
                 <style>
                   <class name="label_l"/>
                 </style>
@@ -913,7 +913,7 @@
                 <property name="can_focus">False</property>
                 <property name="halign">center</property>
                 <property name="valign">center</property>
-                <property name="label" translatable="yes">Resources</property>
+                <property name="label" translatable="yes">System Utilization</property>
                 <style>
                   <class name="label_l"/>
                 </style>
