@@ -70,32 +70,30 @@
             <property name="tab_pos">bottom</property>
             <property name="show_border">False</property>
             <child>
-              <object class="GtkDrawingArea" id="InfoPage1_DrawArea">
-                <property name="width_request">640</property>
-                <property name="height_request">480</property>
+              <object class="GtkImage" id="InfoPage1_Slide">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="pixbuf">Slide 6.png</property>
               </object>
             </child>
             <child type="tab">
               <object class="GtkLabel" id="InfoPage1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Vision AI Dev Kit</property>
+                <property name="label" translatable="yes">Vision AI-Kit 6490</property>
                 <style>
-                  <class name="label"/>
+                  <class name="tab"/>
                 </style>
               </object>
               <packing>
-                <property name="tab_fill">False</property>
+                <property name="tab_expand">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkDrawingArea" id="InfoPage2_DrawArea">
-                <property name="width_request">640</property>
-                <property name="height_request">480</property>
+              <object class="GtkImage" id="InfoPage2_Slide">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="pixbuf">Slide 7.png</property>
               </object>
               <packing>
                 <property name="position">1</property>
@@ -105,22 +103,21 @@
               <object class="GtkLabel" id="InfoPage2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">GStreamer AI/ML Demos</property>
+                <property name="label" translatable="yes">Kit Details</property>
                 <style>
-                  <class name="label"/>
+                  <class name="tab"/>
                 </style>
               </object>
               <packing>
                 <property name="position">1</property>
-                <property name="tab_fill">False</property>
+                <property name="tab_expand">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkDrawingArea" id="InfoPage3_DrawArea">
-                <property name="width_request">640</property>
-                <property name="height_request">480</property>
+              <object class="GtkImage" id="InfoPage3_Slide">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="pixbuf">Slide 8.png</property>
               </object>
               <packing>
                 <property name="position">2</property>
@@ -130,22 +127,21 @@
               <object class="GtkLabel" id="InfoPage3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Vision-AI Resources</property>
+                <property name="label" translatable="yes">EW25 Booth Demo</property>
                 <style>
-                  <class name="label"/>
+                  <class name="tab"/>
                 </style>
               </object>
               <packing>
                 <property name="position">2</property>
-                <property name="tab_fill">False</property>
+                <property name="tab_expand">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkDrawingArea" id="InfoPage4_DrawArea">
-                <property name="width_request">640</property>
-                <property name="height_request">480</property>
+              <object class="GtkImage" id="InfoPage4_Slide">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="pixbuf">Slide 9.png</property>
               </object>
               <packing>
                 <property name="position">3</property>
@@ -155,14 +151,38 @@
               <object class="GtkLabel" id="InfoPage4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Intro Video</property>
+                <property name="label" translatable="yes">Demo Details</property>
                 <style>
-                  <class name="label"/>
+                  <class name="tab"/>
                 </style>
               </object>
               <packing>
                 <property name="position">3</property>
-                <property name="tab_fill">False</property>
+                <property name="tab_expand">True</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage" id="InfoPage4_Slide1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="pixbuf">Slide 10.png</property>
+              </object>
+              <packing>
+                <property name="position">4</property>
+              </packing>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel" id="InfoPage5">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Qualcomm AI Hub</property>
+                <style>
+                  <class name="tab"/>
+                </style>
+              </object>
+              <packing>
+                <property name="position">4</property>
+                <property name="tab_expand">True</property>
               </packing>
             </child>
           </object>
@@ -228,7 +248,6 @@
         <property name="vexpand">True</property>
         <child>
           <object class="GtkBox" id="TopBox">
-            <property name="height_request">60</property>
             <property name="visible">True</property>
             <property name="app_paintable">True</property>
             <property name="can_focus">False</property>
@@ -610,7 +629,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkAspectFrame">
+                  <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="halign">start</property>

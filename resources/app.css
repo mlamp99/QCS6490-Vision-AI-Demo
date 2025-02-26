@@ -19,7 +19,13 @@
 	font-weight: bold;
 	color: #ffffff;
   }
-  
+
+.tab {
+	font-size: 3.5rem;
+	font-weight: bold;
+	color: rgba(0,30,95,1.0);
+}
+
 .labelm {
 	font-size: 3.5rem;
 	font-weight: bold;
