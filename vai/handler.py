@@ -14,18 +14,13 @@ from .common import (
     DEFAULT_DUAL_WINDOW,
     DEFAULT_LEFT_WINDOW,
     DEPTH_SEGMENTATION,
-    GOOGLENET_CLASSIFFICATION,
     GPU_THERMAL_KEY,
     GPU_UTIL_KEY,
-    GRAPH_SAMPLE_SIZE,
-    HRH_POSE_ESTIMATION,
     MEM_THERMAL_KEY,
     MEM_UTIL_KEY,
     OBJECT_DETECTION,
     POSE_DETECTION,
     SEGMENTATION,
-    SEGMENTATION_HTP,
-    SUPER_RESOLUTION,
     HW_SAMPLING_PERIOD_ms,
 )
 from .gst_thread import GstPipeline
@@ -54,10 +49,6 @@ class Handler:
             CLASSIFICATION,
             OBJECT_DETECTION,
             DEPTH_SEGMENTATION,
-            GOOGLENET_CLASSIFFICATION,
-            HRH_POSE_ESTIMATION,
-            SUPER_RESOLUTION,
-            SEGMENTATION_HTP,
         ]
         self.demoProcess0 = None
         self.demoProcess1 = None
