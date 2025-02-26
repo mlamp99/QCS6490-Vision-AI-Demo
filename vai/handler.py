@@ -245,14 +245,14 @@ class Handler:
             allocation = self.DrawArea1.get_allocation()
             self.DrawArea1_x = allocation.x
             self.DrawArea1_y = allocation.y
-            self.DrawArea1_w = MAX_WINDOW_WIDTH
-            self.DrawArea1_h = MAX_WINDOW_HEIGHT
+            self.DrawArea1_w = allocation.width
+            self.DrawArea1_h = allocation.height
 
             allocation = self.DrawArea2.get_allocation()
             self.DrawArea2_x = allocation.x
             self.DrawArea2_y = allocation.y
-            self.DrawArea2_w = MAX_WINDOW_WIDTH
-            self.DrawArea2_h = MAX_WINDOW_HEIGHT
+            self.DrawArea2_w = allocation.width
+            self.DrawArea2_h = allocation.height
 
             self.allocated_sizes = True
 
