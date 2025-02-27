@@ -177,8 +177,14 @@ class VaiDemoManager:
         draw_graph_background_and_border(
             width, height, cr, res_tuple=self.main_window_dims
         )
-        # legend_x = draw_graph_legend(UTIL_GRAPH_COLORS_RGBF, width, cr, 220)
-        x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
+
+        # TODO: Can move dynamic limits into the graphing api
+        x_min = (
+            -int(time.monotonic() - self.util_data[TIME_KEY][0])
+            if self.util_data[TIME_KEY]
+            else 0
+        )
+        x_lim = (x_min, 0)
         y_lim = (0, 100)
         x_axis, y_axis = draw_axes_and_labels(
             cr,
@@ -243,7 +249,12 @@ class VaiDemoManager:
         draw_graph_background_and_border(
             width, height, cr, res_tuple=self.main_window_dims
         )
-        x_lim = (-GRAPH_SAMPLE_WINDOW_SIZE_s, 0)
+        x_min = (
+            -int(time.monotonic() - self.thermal_data[TIME_KEY][0])
+            if self.thermal_data[TIME_KEY]
+            else 0
+        )
+        x_lim = (x_min, 0)
         y_lim = (30, 115)
         x_axis, y_axis = draw_axes_and_labels(
             cr,
@@ -288,16 +299,6 @@ class VaiDemoManager:
         self.thermal_data[MEM_THERMAL_KEY].append(
             self.eventHandler.sample_data[MEM_THERMAL_KEY]
         )
-        # For each wave, pop the oldest sample and append a new one
-        """
-        If you want to simulate a wave, modify can use the following code
-        elapsed = time.time()
-        for i in range(3):
-            self.graph_data[i].pop(0)
-            # Eachwave has a different phase
-            new_value = int(30 * math.sin(elapsed * 2 + self.phases[i]))
-            self.graph_data[i].append(new_value)
-        """
         # Request a redraw
         self.eventHandler.GraphDrawAreaTop.queue_draw()
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
@@ -348,7 +349,6 @@ class VaiDemoManager:
         # Maybe keep canned generation for situations that perf depends arent available?
         self.util_data = None
         self.thermal_data = None
-        self.phases = [0, math.pi / 3, 2 * math.pi / 3]
 
         self.eventHandler.QProf = QProfProcess()
 

@@ -102,7 +102,8 @@ def draw_axes_and_labels(
     Returns:
         (x, y) axis positions
     """
-    cr.save()  # save the current transformation/state
+    if not x_lim or not y_lim:
+        return width, height
 
     if dynamic_margin:
         right_margin = lerp(20, 100, res_tuple[0] / MAX_RES_WIDTH)
@@ -110,6 +111,9 @@ def draw_axes_and_labels(
 
     width -= right_margin  # Leave a little space on the right for the legend
     height -= bottom_margin  # Leave a little space on the bottom for the x-axis labels
+
+    if not x_ticks or not y_ticks:  # No ticks, nothing to draw
+        return width, height
 
     axis_width = lerp(
         GRAPH_AXIS_LINE_WIDTH_MIN,
@@ -121,6 +125,9 @@ def draw_axes_and_labels(
         GRAPH_LABEL_FONT_SIZE_MAX,
         res_tuple[0] / MAX_RES_WIDTH,
     )
+
+    cr.save()  # save the current transformation/state
+
     cr.set_line_width(axis_width)
     cr.set_source_rgb(1, 1, 1)  # white lines & text
 
@@ -145,7 +152,7 @@ def draw_axes_and_labels(
     for i in range(x_ticks + 1):
         x_val = x_min + i * dx
         # Convert data → screen coordinate: 0..width
-        x_screen = int((x_val - x_min) / (x_max - x_min) * width)
+        x_screen = int((x_val - x_min) / ((x_max - x_min) or 1) * width)
 
         # Tick mark from (x_screen, height) up a bit
         tick_length = 6
@@ -172,7 +179,7 @@ def draw_axes_and_labels(
     dy = (y_max - y_min) / (y_ticks or 1)
     for j in range(y_ticks + 1):
         y_val = y_min + j * dy
-        y_ratio = (y_val - y_min) / (y_max - y_min)
+        y_ratio = (y_val - y_min) / ((y_max - y_min) or 1)
         y_screen = int(height - y_ratio * height)  # 0 -> bottom, height -> top
 
         tick_length = lerp(
@@ -271,6 +278,9 @@ def draw_graph_data(
         cr: Cairo context
         y_lim (optional): Tuple of min and max y values
     """
+    if not data_map or not data_color_map:
+        return
+
     graph_line_width = lerp(
         GRAPH_DATA_LINE_WIDTH_MIN,
         GRAPH_DATA_LINE_WIDTH_MAX,
