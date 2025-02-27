@@ -301,7 +301,7 @@ class Handler:
             self.demoProcess1.start()
 
     def IdleUpdateLabels(self, label, text):
-        label.set_text(text)
+        GLib.idle_add(label.set_text,text)
 
     # TODO: Verify then delete CapImage calls
     def CapImage_event1(self, widget, context):

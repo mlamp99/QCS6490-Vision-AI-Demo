@@ -24,8 +24,8 @@ TRIA_YELLOW_RGBH = (0xFE, 0xDB, 0x00)
 # WARN: These commands will be processed by application. Tags like <TAG> are likely placeholder
 
 # Having one default is fine, as we can extrapolate for the other window
-DEFAULT_LEFT_WINDOW = "waylandsink async=true sync=false <ONE_WINDOW_XYWH>"
-DEFAULT_DUAL_WINDOW = "waylandsink async=true sync=false <DUAL_WINDOW_XYWH>"
+DEFAULT_LEFT_WINDOW = "waylandsink async=true sync=false drop=1 <ONE_WINDOW_XYWH>"
+DEFAULT_DUAL_WINDOW = "waylandsink async=true sync=false drop=1 <DUAL_WINDOW_XYWH>"
 
 # TODO: add FPS support for camera
 # TODO: What is the most reasonable res?

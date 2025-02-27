@@ -1,6 +1,7 @@
 import re
 import subprocess
 import threading
+import time
 
 from vai.common import HW_SAMPLING_PERIOD_ms
 
@@ -25,21 +26,26 @@ class QProfProcess(threading.Thread):
             rb"(?:\x1B[@-Z\\-_]|[\x80-\x9A\x9C-\x9F]|(?:\x1B\[|\x9B)[0-?]*[ -/]*[@-~])"
         )
         while self.enabled:
-            p = subprocess.Popen(
-                f"qprof \
-                                    --profile \
-                                    --profile-type async \
-                                    --result-format CSV \
-                                    --capabilities-list profiler:apps-proc-cpu-metrics profiler:proc-gpu-specific-metrics profiler:apps-proc-mem-metrics \
-                                    --profile-time 10 \
-                                    --sampling-rate {HW_SAMPLING_PERIOD_ms} \
-                                    --streaming-rate {HW_SAMPLING_PERIOD_ms} \
-                                    --live \
-                                    --metric-id-list 4648 4616 4865".split(),
-                shell=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            try:
+                p = subprocess.Popen(
+                    f"qprof \
+                                        --profile \
+                                        --profile-type async \
+                                        --result-format CSV \
+                                        --capabilities-list profiler:apps-proc-cpu-metrics profiler:proc-gpu-specific-metrics profiler:apps-proc-mem-metrics \
+                                        --profile-time 10 \
+                                        --sampling-rate {HW_SAMPLING_PERIOD_ms} \
+                                        --streaming-rate {HW_SAMPLING_PERIOD_ms} \
+                                        --live \
+                                        --metric-id-list 4648 4616 4865".split(),
+                    shell=False,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                )
+            except: 
+                self.enabled = False
+                pass
+            
             while self.enabled:
                 # line = p.stdout.readline().decode('utf-8').encode("ascii","ignore")
                 line = p.stdout.readline().decode("utf-8").encode("ascii", "ignore")
@@ -64,6 +70,7 @@ class QProfProcess(threading.Thread):
                 "/bin/rm -rf /data/shared/QualcommProfiler/profilingresults/*",
                 shell=True,
             )
+            time.sleep(HW_SAMPLING_PERIOD_ms/1000)
 
     def Close(self):
         self.enabled = False
