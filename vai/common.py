@@ -2,13 +2,14 @@
 
 import subprocess
 
-GRAPH_SAMPLE_WINDOW_SIZE_s = 15
+GRAPH_SAMPLE_WINDOW_SIZE_s = 30
 HW_SAMPLING_PERIOD_ms = 250
 GRAPH_DRAW_PERIOD_ms = 30
 
 # TODO: relate this with qprof rate
 GRAPH_SAMPLE_SIZE = int(GRAPH_SAMPLE_WINDOW_SIZE_s * 1000 / GRAPH_DRAW_PERIOD_ms)
 
+TIME_KEY = "time"
 CPU_UTIL_KEY = "cpu %"
 MEM_UTIL_KEY = "lpddr5 %"
 GPU_UTIL_KEY = "gpu %"

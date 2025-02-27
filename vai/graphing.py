@@ -279,6 +279,9 @@ def draw_graph_data(
     cr.set_line_width(graph_line_width)
 
     for data_key, data in data_map.items():
+        if data_key not in data_color_map:
+            continue  # Skip if no color for this data (like timestamps)
+
         cr.set_source_rgb(*data_color_map[data_key])
         cr.move_to(
             lerp(0, width, 0 if len(data) >= 1 else 1),

@@ -4,6 +4,7 @@ import collections
 import math
 import os
 import threading
+import time
 
 import gi
 
@@ -16,12 +17,11 @@ from vai.common import (
     GRAPH_SAMPLE_SIZE,
     MEM_THERMAL_KEY,
     MEM_UTIL_KEY,
+    TIME_KEY,
     TRIA,
-    TRIA_BLUE_RGBH,
     TRIA_PINK_RGBH,
     TRIA_WHITE_RGBH,
     TRIA_YELLOW_RGBH,
-    GRAPH_DRAW_PERIOD_ms,
     GRAPH_SAMPLE_WINDOW_SIZE_s,
 )
 from vai.graphing import (
@@ -133,25 +133,43 @@ class VaiDemoManager:
     def init_graph_data(self, sample_size=GRAPH_SAMPLE_SIZE):
         """Initialize the graph data according to graph box size"""
         self.util_data = {
-            CPU_UTIL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
-            MEM_UTIL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
-            GPU_UTIL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
+            TIME_KEY: collections.deque([], maxlen=sample_size),
+            CPU_UTIL_KEY: collections.deque([], maxlen=sample_size),
+            MEM_UTIL_KEY: collections.deque([], maxlen=sample_size),
+            GPU_UTIL_KEY: collections.deque([], maxlen=sample_size),
         }
         self.thermal_data = {
-            CPU_THERMAL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
-            MEM_THERMAL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
-            GPU_THERMAL_KEY: collections.deque([0] * sample_size, maxlen=sample_size),
+            TIME_KEY: collections.deque([], maxlen=sample_size),
+            CPU_THERMAL_KEY: collections.deque([], maxlen=sample_size),
+            MEM_THERMAL_KEY: collections.deque([], maxlen=sample_size),
+            GPU_THERMAL_KEY: collections.deque([], maxlen=sample_size),
         }
 
-    def on_util_graph_draw(self, widget, cr):
-        """Draw the graph on the draw area"""
+    def _sample_util_data(self):
+        """Sample the utilization data; prefer this function because it timestamps entries to util data"""
 
         if self.util_data is None or self.thermal_data is None:
             self.init_graph_data()
 
+        self.util_data[TIME_KEY].append(time.monotonic())
         self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
         self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
         self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
+
+        cur_time = time.monotonic()
+        while (
+            self.util_data[TIME_KEY]
+            and cur_time - self.util_data[TIME_KEY][0] > GRAPH_SAMPLE_WINDOW_SIZE_s
+        ):
+            self.util_data[TIME_KEY].popleft()
+            self.util_data[CPU_UTIL_KEY].popleft()
+            self.util_data[GPU_UTIL_KEY].popleft()
+            self.util_data[MEM_UTIL_KEY].popleft()
+
+    def on_util_graph_draw(self, widget, cr):
+        """Draw the util graph on the draw area"""
+
+        self._sample_util_data()
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
@@ -188,11 +206,12 @@ class VaiDemoManager:
 
         return True
 
-    def on_thermal_graph_draw(self, widget, cr):
-        """Draw the graph on the draw area"""
+    def _sample_thermal_data(self):
+        """Sample the thermal data; prefer this function because it timestamps entries to thermal data"""
         if self.thermal_data is None:
             self.init_graph_data()
 
+        self.thermal_data[TIME_KEY].append(time.monotonic())
         self.thermal_data[CPU_THERMAL_KEY].append(
             self.eventHandler.sample_data[CPU_THERMAL_KEY]
         )
@@ -202,6 +221,21 @@ class VaiDemoManager:
         self.thermal_data[MEM_THERMAL_KEY].append(
             self.eventHandler.sample_data[MEM_THERMAL_KEY]
         )
+
+        cur_time = time.monotonic()
+        while (
+            self.thermal_data[TIME_KEY]
+            and cur_time - self.thermal_data[TIME_KEY][0] > GRAPH_SAMPLE_WINDOW_SIZE_s
+        ):
+            self.thermal_data[TIME_KEY].popleft()
+            self.thermal_data[CPU_THERMAL_KEY].popleft()
+            self.thermal_data[GPU_THERMAL_KEY].popleft()
+            self.thermal_data[MEM_THERMAL_KEY].popleft()
+
+    def on_thermal_graph_draw(self, widget, cr):
+        """Draw the graph on the draw area"""
+
+        self._sample_thermal_data()
 
         width = widget.get_allocated_width()
         height = widget.get_allocated_height()
