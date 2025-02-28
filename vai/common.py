@@ -75,7 +75,7 @@ split. ! queue ! \
       delegate=external \
       external-delegate-path=libQnnTFLiteDelegate.so \
       external-delegate-options="QNNExternalDelegate,backend_type=htp" \
-      model=/opt/deeplabv3_plus_mobilenet_quantized_aihub.tflite ! queue ! \
+      model=/opt/deeplabv3_plus_mobilenet_quantized.tflite ! queue ! \
   qtimlvsegmentation \
       module=deeplab-argmax \
       labels=/opt/voc_labels.txt \
