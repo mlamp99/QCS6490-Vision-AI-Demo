@@ -39,6 +39,8 @@ MAX_WINDOW_HEIGHT = 720
 
 DUAL_WINDOW_DEMOS = ["depth segmentation"]
 
+PIPELINE_HEALTH_SIGNAL = "identity signal-handoffs=true name=id"
+
 
 class Handler:
     def __init__(self, display_fps_metrics=True):
@@ -205,7 +207,9 @@ class Handler:
 
         Gtk.main_quit(*args)
 
-    def _modify_command_pipeline(self, command, stream_index):
+    def _modify_command_pipeline(
+        self, command, stream_index, inject_health_signal=True
+    ):
         """Modify GST pipeline by replacing placeholders with runtime values."""
 
         # TODO: support l/r windows through parameterization or other technique
@@ -226,9 +230,15 @@ class Handler:
         )
 
         # TODO: If we do file processing, we'll need to support that around here
+        health_monitor_addin = (
+            " ! " + PIPELINE_HEALTH_SIGNAL if inject_health_signal else ""
+        )
         command = command.replace(
             "<DATA_SRC>",
-            f"v4l2src device={self.cam1 if stream_index == 0 else self.cam2}",
+            (
+                f"v4l2src device={self.cam1 if stream_index == 0 else self.cam2}"
+                + health_monitor_addin
+            ),
         )
         # TODO: use rect instead of x/y/width/height ?
         x = self.DrawArea1_x if stream_index == 0 else self.DrawArea2_x
