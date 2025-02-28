@@ -8,27 +8,13 @@ import time
 
 import gi
 
-from vai.common import (
-    APP_HEADER,
-    CPU_THERMAL_KEY,
-    CPU_UTIL_KEY,
-    GPU_THERMAL_KEY,
-    GPU_UTIL_KEY,
-    GRAPH_SAMPLE_SIZE,
-    MEM_THERMAL_KEY,
-    MEM_UTIL_KEY,
-    TIME_KEY,
-    TRIA,
-    TRIA_PINK_RGBH,
-    TRIA_WHITE_RGBH,
-    TRIA_YELLOW_RGBH,
-    GRAPH_SAMPLE_WINDOW_SIZE_s,
-)
-from vai.graphing import (
-    draw_axes_and_labels,
-    draw_graph_background_and_border,
-    draw_graph_data,
-)
+from vai.common import (APP_HEADER, CPU_THERMAL_KEY, CPU_UTIL_KEY,
+                        GPU_THERMAL_KEY, GPU_UTIL_KEY, GRAPH_SAMPLE_SIZE,
+                        MEM_THERMAL_KEY, MEM_UTIL_KEY, TIME_KEY, TRIA,
+                        TRIA_PINK_RGBH, TRIA_WHITE_RGBH, TRIA_YELLOW_RGBH,
+                        GRAPH_SAMPLE_WINDOW_SIZE_s)
+from vai.graphing import (draw_axes_and_labels,
+                          draw_graph_background_and_border, draw_graph_data)
 from vai.handler import Handler
 from vai.qprofile import QProfProcess
 
@@ -184,6 +170,10 @@ class VaiDemoManager:
             if self.util_data[TIME_KEY]
             else 0
         )
+        # Help with the jittering of the graph
+        if abs(x_min - GRAPH_SAMPLE_WINDOW_SIZE_s) <= 1:
+            x_min = -GRAPH_SAMPLE_WINDOW_SIZE_s
+
         x_lim = (x_min, 0)
         y_lim = (0, 100)
         x_axis, y_axis = draw_axes_and_labels(
