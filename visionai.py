@@ -12,7 +12,7 @@ from vai.common import (APP_HEADER, CPU_THERMAL_KEY, CPU_UTIL_KEY,
                         GPU_THERMAL_KEY, GPU_UTIL_KEY, GRAPH_SAMPLE_SIZE,
                         MEM_THERMAL_KEY, MEM_UTIL_KEY, TIME_KEY, TRIA,
                         TRIA_PINK_RGBH, TRIA_WHITE_RGBH, TRIA_YELLOW_RGBH,
-                        GRAPH_SAMPLE_WINDOW_SIZE_s)
+                        GRAPH_SAMPLE_WINDOW_SIZE_s, AUTOMATIC_DEMO_SWITCH_s)
 from vai.graphing import (draw_axes_and_labels,
                           draw_graph_background_and_border, draw_graph_data)
 from vai.handler import Handler
@@ -31,7 +31,7 @@ from vai.qprofile import QProfProcess
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gst, Gtk
+from gi.repository import Gdk, Gst, Gtk, GLib
 
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
@@ -71,7 +71,14 @@ class VaiDemoManager:
 
         self.eventHandler = Handler()
         self.running = True
+        self.demoSelection0Cnt = 0
+        self.demoSelection1Cnt = 0
+        self.demo0Interval = 0
+        self.demo1Interval = 0
+        self.demo0RunningIndex = 0
+        self.demo1RunningIndex = 0
 
+        GLib.timeout_add(1000, self.automateDemo)
         self.localAppThread = threading.Thread(target=self.localApp)
         self.localAppThread.start()
 
@@ -294,6 +301,60 @@ class VaiDemoManager:
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
         return True
 
+    def automateDemo(self):
+        if (self.eventHandler.demoProcess0 is not None) and (self.demoSelection0Cnt > 0):
+            cycleDemo0 = True
+        else:
+            cycleDemo0 = False
+            self.demo0Interval = 0
+            self.demo0RunningIndex = 1
+
+        if (self.eventHandler.demoProcess1 is not None) and (self.demoSelection1Cnt > 0):
+            cycleDemo1 = True
+        else:
+            cycleDemo1 = False
+            self.demo1Interval = 0
+            self.demo1RunningIndex = 1
+
+        if cycleDemo0:
+            if self.demo0Interval >= AUTOMATIC_DEMO_SWITCH_s:
+                self.demo0Interval = 0
+
+                #time automation in such a way that only one demo switches at a time
+                #to minimize potential issues
+                self.demo1Interval = int(AUTOMATIC_DEMO_SWITCH_s / 2)
+
+                self.demo0RunningIndex = self.demo0RunningIndex + 1
+
+                if self.demo0RunningIndex >= self.demoSelection0Cnt:
+                    self.demo0RunningIndex = 1
+                
+                if self.eventHandler.dualDemoRunning1 != True:
+                    self.eventHandler.demo_selection0.set_active(self.demo0RunningIndex) 
+                
+            else:
+                self.demo0Interval = self.demo0Interval + 1
+
+        if cycleDemo1:
+            if self.demo1Interval >= AUTOMATIC_DEMO_SWITCH_s:
+                self.demo1Interval = 0
+
+                #force demo 1 to run a different demo
+                if self.demo0RunningIndex >=0:
+                    self.demo1RunningIndex = self.demo0RunningIndex + 1
+                else:
+                    self.demo1RunningIndex = self.demo1RunningIndex + 1
+
+                if self.demo1RunningIndex >= self.demoSelection1Cnt:
+                    self.demo1RunningIndex = 1
+
+                if self.eventHandler.dualDemoRunning0 != True:
+                    self.eventHandler.demo_selection1.set_active(self.demo1RunningIndex) 
+            else:
+                self.demo1Interval = self.demo1Interval + 1
+
+        return GLib.SOURCE_CONTINUE
+
     def localApp(self):
         global GladeBuilder
 
@@ -327,9 +388,17 @@ class VaiDemoManager:
         self.eventHandler.DrawArea1 = GladeBuilder.get_object("DrawArea1")
         self.eventHandler.DrawArea2 = GladeBuilder.get_object("DrawArea2")
         self.eventHandler.GraphDrawAreaTop = GladeBuilder.get_object("GraphDrawAreaTop")
-        self.eventHandler.GraphDrawAreaBottom = GladeBuilder.get_object(
-            "GraphDrawAreaBottom"
-        )
+        self.eventHandler.GraphDrawAreaBottom = GladeBuilder.get_object("GraphDrawAreaBottom")
+        self.eventHandler.demo_selection0 = GladeBuilder.get_object("demo_selection0")
+        self.eventHandler.demo_selection1 = GladeBuilder.get_object("demo_selection1")
+
+        model = self.eventHandler.demo_selection0.get_model()
+        if model is not None:
+            self.demoSelection0Cnt = len(model)
+
+        model = self.eventHandler.demo_selection1.get_model()
+        if model is not None:
+            self.demoSelection1Cnt = len(model)
 
         # TODO: Dynamic sizing, positioning
         self.eventHandler.GraphDrawAreaTop.connect("draw", self.on_util_graph_draw)

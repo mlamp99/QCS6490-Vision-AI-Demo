@@ -30,7 +30,7 @@ from .psutil_profile import get_cpu_gpu_mem_temps
 # Locks app version, prevents warnings
 gi.require_version("Gtk", "3.0")
 
-from gi.repository import GLib, GObject, Gtk
+from gi.repository import GLib, Gtk
 
 # Tuning variable to adjust the height of the video display
 HEIGHT_OFFSET = 17
@@ -70,6 +70,8 @@ class Handler:
         self.DrawArea2_h = None
         self.display_fps_metrics = display_fps_metrics
         self.USBCameras = []
+        self.dualDemoRunning0 = False
+        self.dualDemoRunning1 = False
 
         # TODO: protect with sync primitive?
         self.sample_data = {
@@ -89,7 +91,7 @@ class Handler:
         print(f"Using CAM2: {self.cam2}")
 
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
-        GObject.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_sample_data)
+        GLib.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_sample_data)
 
     # TODO: MIPI integration
     def scan_for_connected_usb_cameras(self):
@@ -292,14 +294,24 @@ class Handler:
         kill0 = True if demo_process == 0 else False
         kill1 = True if demo_process == 1 else False
         if demo.lower() in DUAL_WINDOW_DEMOS:
+            if demo_process == 0:
+                self.dualDemoRunning0 = True
+            if demo_process == 1:
+                self.dualDemoRunning1 = True
+
             kill0 = True
             kill1 = True
+        else:
+            if demo_process == 0:
+                self.dualDemoRunning0 = False
+            if demo_process == 1:
+                self.dualDemoRunning1 = False
 
         if kill0 and self.demoProcess0 is not None:
             self.demoProcess0.close()
         if kill1 and self.demoProcess1 is not None:
             self.demoProcess1.close()
-        sleep(0.5)
+        sleep(1)
 
     def demo0_selection_changed_cb(self, combo):
         """Signal handler for the 1st demo selection combo box."""
