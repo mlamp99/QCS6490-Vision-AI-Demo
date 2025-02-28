@@ -1,3 +1,4 @@
+import pathlib
 import signal
 import subprocess
 import sys
@@ -88,20 +89,31 @@ class Handler:
         GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, self.exit, "SIGINT")
         GObject.timeout_add(HW_SAMPLING_PERIOD_ms, self.update_sample_data)
 
+    # TODO: MIPI integration
     def scan_for_connected_usb_cameras(self):
-        """Scans for cameras via v4l"""
+        """Scans for cameras via v4l, populating the USBCameras list with the camera name and path, returning the number of cameras found."""
 
-        output = subprocess.check_output(["ls", "/dev/v4l/by-id"])
-        device_id = -1
-        for device_info in output.decode().splitlines():
-            # By testing, video-index0 is the camera capable of video streaming
-            if "video-index0" in device_info:
-                device_id = device_id + 1
-                self.USBCameras.append(
-                    ("USB CAM" + str(device_id), "/dev/v4l/by-id/" + device_info)
-                )
+        usb_cameras_path = pathlib.Path("/dev/v4l/by-id")
+        if not usb_cameras_path.exists():
+            print(
+                "Warning: no USB cameras found. Please examine your USB camera connections."
+            )
+            return 0
 
-        return len(self.USBCameras)
+        try:
+            output = subprocess.check_output(["ls", "/dev/v4l/by-id"])
+            device_id = -1
+            for device_info in output.decode().splitlines():
+                # By testing, video-index0 is the camera capable of video streaming
+                if "video-index0" in device_info:
+                    device_id = device_id + 1
+                    self.USBCameras.append(
+                        ("USB CAM" + str(device_id), "/dev/v4l/by-id/" + device_info)
+                    )
+        except Exception as e:
+            print(f"Error scanning for USB cameras: {e}")
+        finally:
+            return len(self.USBCameras)
 
     def exit(self, payload):
         """Handle exit signals and clean up resources before exiting the application.
@@ -300,7 +312,7 @@ class Handler:
             self.demoProcess1.start()
 
     def IdleUpdateLabels(self, label, text):
-        GLib.idle_add(label.set_text,text)
+        GLib.idle_add(label.set_text, text)
 
     # TODO: Verify then delete CapImage calls
     def CapImage_event1(self, widget, context):
