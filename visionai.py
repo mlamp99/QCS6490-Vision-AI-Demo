@@ -11,7 +11,8 @@ from vai.common import (APP_HEADER, CPU_THERMAL_KEY, CPU_UTIL_KEY,
                         GPU_THERMAL_KEY, GPU_UTIL_KEY, GRAPH_SAMPLE_SIZE,
                         MEM_THERMAL_KEY, MEM_UTIL_KEY, TIME_KEY, TRIA,
                         TRIA_PINK_RGBH, TRIA_WHITE_RGBH, TRIA_YELLOW_RGBH,
-                        AUTOMATIC_DEMO_SWITCH_s, GRAPH_SAMPLE_WINDOW_SIZE_s)
+                        AUTOMATIC_DEMO_SWITCH_s, GRAPH_SAMPLE_WINDOW_SIZE_s,
+                        get_ema)
 from vai.graphing import (draw_axes_and_labels,
                           draw_graph_background_and_border, draw_graph_data)
 from vai.handler import Handler
@@ -164,9 +165,23 @@ class VaiDemoManager:
             self.init_graph_data()
 
         self.util_data[TIME_KEY].append(time.monotonic())
-        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
-        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
-        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
+
+        # Sample and smooth the data with exponential smoothing
+        cur_cpu = self.eventHandler.sample_data[CPU_UTIL_KEY]
+        cur_gpu = self.eventHandler.sample_data[GPU_UTIL_KEY]
+        cur_mem = self.eventHandler.sample_data[MEM_UTIL_KEY]
+
+        last_cpu = self.util_data[CPU_UTIL_KEY][-1] if self.util_data[CPU_UTIL_KEY] else cur_cpu
+        last_gpu = self.util_data[GPU_UTIL_KEY][-1] if self.util_data[GPU_UTIL_KEY] else cur_gpu
+        last_mem = self.util_data[MEM_UTIL_KEY][-1] if self.util_data[MEM_UTIL_KEY] else cur_mem
+
+        ema_cpu = get_ema(cur_cpu, last_cpu)
+        ema_gpu = get_ema(cur_gpu, last_gpu)
+        ema_mem = get_ema(cur_mem, last_mem)
+
+        self.util_data[CPU_UTIL_KEY].append(ema_cpu)
+        self.util_data[GPU_UTIL_KEY].append(ema_gpu)
+        self.util_data[MEM_UTIL_KEY].append(ema_mem)
 
         cur_time = time.monotonic()
         while (
@@ -231,14 +246,28 @@ class VaiDemoManager:
             self.init_graph_data()
 
         self.thermal_data[TIME_KEY].append(time.monotonic())
+
+        # Sample and smooth the data with exponential smoothing
+        cur_cpu = self.eventHandler.sample_data[CPU_THERMAL_KEY]
+        cur_gpu = self.eventHandler.sample_data[GPU_THERMAL_KEY]
+        cur_mem = self.eventHandler.sample_data[MEM_THERMAL_KEY]
+
+        last_cpu = self.thermal_data[CPU_THERMAL_KEY][-1] if self.thermal_data[CPU_THERMAL_KEY] else cur_cpu
+        last_gpu = self.thermal_data[GPU_THERMAL_KEY][-1] if self.thermal_data[GPU_THERMAL_KEY] else cur_gpu
+        last_mem = self.thermal_data[MEM_THERMAL_KEY][-1] if self.thermal_data[MEM_THERMAL_KEY] else cur_mem
+
+        ema_cpu = get_ema(cur_cpu, last_cpu)
+        ema_gpu = get_ema(cur_gpu, last_gpu)
+        ema_mem = get_ema(cur_mem, last_mem)
+
         self.thermal_data[CPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[CPU_THERMAL_KEY]
+            ema_cpu
         )
         self.thermal_data[GPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[GPU_THERMAL_KEY]
+            ema_gpu
         )
         self.thermal_data[MEM_THERMAL_KEY].append(
-            self.eventHandler.sample_data[MEM_THERMAL_KEY]
+            ema_mem
         )
 
         cur_time = time.monotonic()
@@ -289,28 +318,6 @@ class VaiDemoManager:
             res_tuple=self.main_window_dims,
         )
 
-        self.eventHandler.GraphDrawAreaBottom.queue_draw()
-        return True
-
-    def update_graph(self):
-        """Update the graph values for real-time rendering"""
-        if self.util_data is None:  # Graph data not initialized
-            return True
-
-        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
-        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
-        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
-        self.thermal_data[CPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[CPU_THERMAL_KEY]
-        )
-        self.thermal_data[GPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[GPU_THERMAL_KEY]
-        )
-        self.thermal_data[MEM_THERMAL_KEY].append(
-            self.eventHandler.sample_data[MEM_THERMAL_KEY]
-        )
-        # Request a redraw
-        self.eventHandler.GraphDrawAreaTop.queue_draw()
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
         return True
 

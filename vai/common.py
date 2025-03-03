@@ -107,6 +107,25 @@ def inverse_lerp(a, b, v):
     return (v - a) / (b - a) if a != b else 0.0
 
 
+def get_ema(x_cur, x_last, alpha=0.75):
+    """
+    Exponential moving average
+
+    Args:
+        x_cur: Current value
+        x_last: Last value
+        alpha: Smoothing factor
+
+    Note:
+        alpha is a misnomer. alpha = 1.0 is equivalent to no smoothing
+
+    Ref:
+        https://en.wikipedia.org/wiki/Exponential_smoothing
+
+    """
+    return alpha * x_cur + (1 - alpha) * x_last
+
+
 def app_version():
     """Get the latest tag or commit hash if possible, unknown otherwise"""
 
