@@ -64,7 +64,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkNotebook">
+          <object class="GtkNotebook" id="nbContent">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="tab_pos">bottom</property>
@@ -280,6 +280,9 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">9. IQ9 AI Box</property>
+                <style>
+                  <class name="tab"/>
+                </style>
               </object>
               <packing>
                 <property name="position">8</property>
@@ -287,6 +290,9 @@
                 <property name="tab_fill">False</property>
               </packing>
             </child>
+            <style>
+              <class name="nbContent"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
