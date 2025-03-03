@@ -102,6 +102,11 @@ def lerp(a, b, t):
     return a + t * (b - a)
 
 
+def inverse_lerp(a, b, v):
+    """Inverse linear interpolation between two values"""
+    return (v - a) / (b - a) if a != b else 0.0
+
+
 def app_version():
     """Get the latest tag or commit hash if possible, unknown otherwise"""
 

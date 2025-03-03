@@ -198,11 +198,6 @@ class VaiDemoManager:
         x_lim = (x_min, MAX_TIME_DISPLAYED)
         y_lim = (MIN_UTIL_DISPLAYED, MAX_UTIL_DISPLAYED)
 
-        # placeholder logic to test graphing
-        self.util_data[CPU_UTIL_KEY] = list(range(0, 100))
-        self.util_data[MEM_UTIL_KEY] = list(range(0, 50))
-        self.util_data[GPU_UTIL_KEY] = list(range(50, 100))
-
         x_axis, y_axis = draw_axes_and_labels(
             cr,
             width,
@@ -222,7 +217,7 @@ class VaiDemoManager:
             x_axis,
             y_axis,
             cr,
-            y_lim=(0, 100),
+            y_lim=y_lim,
             res_tuple=self.main_window_dims,
         )
 
@@ -270,11 +265,6 @@ class VaiDemoManager:
         x_min = get_min_time_delta_smoothed(self.thermal_data[TIME_KEY])
         x_lim = (x_min, MAX_TIME_DISPLAYED)
         y_lim = (MIN_TEMP_DISPLAYED, MAX_TEMP_DISPLAYED)
-
-        # placeholder logic to test graphing
-        self.thermal_data[CPU_THERMAL_KEY] = list(range(30, 115))
-        self.thermal_data[MEM_THERMAL_KEY] = list(range(30, 72))
-        self.thermal_data[GPU_THERMAL_KEY] = list(range(20, 69))
 
         x_axis, y_axis = draw_axes_and_labels(
             cr,

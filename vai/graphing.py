@@ -1,4 +1,4 @@
-from .common import lerp
+from .common import inverse_lerp, lerp
 
 # Scaling boundaries (assumes res between 1920x1080 and 3840x2160)
 GRAPH_LABEL_FONT_SIZE_MIN = 14
@@ -293,13 +293,23 @@ def draw_graph_data(
             continue  # Skip if no color for this data (like timestamps)
 
         cr.set_source_rgb(*data_color_map[data_key])
+        # Start the cursor at the first data point if possible
+        # x is 0 or width because our data must always fit between 0 and width, (not the case for y values)
         cr.move_to(
-            lerp(0, width, 0 if len(data) >= 1 else 1),
-            int(lerp(y_lim[0], height, 1 - data[0] / y_lim[1])),
+            0 if data else width,
+            (
+                height
+                if not data
+                else int(lerp(0, height, 1 - inverse_lerp(y_lim[0], y_lim[1], data[0])))
+            ),
         )
+        # We must inverse lerp to get the % of the y value between the min and max y values for instances where y_lim is not 0-100
         for x in range(1, len(data)):
+            y_pct = inverse_lerp(y_lim[0], y_lim[1], data[x])
             cr.line_to(
-                int(lerp(0, width, x / len(data))),
-                int(lerp(y_lim[0], height, 1 - data[x] / y_lim[1])),
+                int(
+                    lerp(0, width, x / len(data))
+                ),  # cant divide by 0 in this range definition
+                int(lerp(0, height, 1 - y_pct)),
             )
         cr.stroke()
