@@ -53,7 +53,7 @@ split. ! queue ! qtimlvconverter ! queue ! qtimlsnpe delegate=dsp model=/opt/yol
 ! video/x-raw,format=BGRA,width=640,height=480 ! queue ! mixer1.'
 
 DEPTH_SEGMENTATION = "<DATA_SRC> ! qtivtransform ! \
-    video/x-raw(memory:GBM),format=NV12,width=1920,height=1080,framerate=30/1,compression=ubwc ! \
+    video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! \
     tee name=split \
     split. ! queue ! qtivcomposer background=0 name=dual \
         sink_0::position=<0,0> sink_0::dimensions=<960,720> \
