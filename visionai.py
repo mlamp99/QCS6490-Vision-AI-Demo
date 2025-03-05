@@ -10,7 +10,7 @@ import gi
 from vai.common import (APP_HEADER, CPU_THERMAL_KEY, CPU_UTIL_KEY,
                         GPU_THERMAL_KEY, GPU_UTIL_KEY, GRAPH_SAMPLE_SIZE,
                         MEM_THERMAL_KEY, MEM_UTIL_KEY, TIME_KEY, TRIA,
-                        TRIA_PINK_RGBH, TRIA_WHITE_RGBH, TRIA_YELLOW_RGBH,
+                        TRIA_BLUE_RGBH, TRIA_PINK_RGBH, TRIA_YELLOW_RGBH,
                         AUTOMATIC_DEMO_SWITCH_s, GRAPH_SAMPLE_WINDOW_SIZE_s,
                         get_ema)
 from vai.graphing import (draw_axes_and_labels,
@@ -37,25 +37,25 @@ from gi.repository import Gdk, GLib, Gst, Gtk
 
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 THERMAL_GRAPH_COLORS_RGBF = {
     CPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 THERMAL_GRAPH_COLORS_RGBF = {
     CPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 

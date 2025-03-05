@@ -7,7 +7,6 @@ HW_SAMPLING_PERIOD_ms = 250
 GRAPH_DRAW_PERIOD_ms = 30
 AUTOMATIC_DEMO_SWITCH_s = 60
 
-# TODO: relate this with qprof rate
 GRAPH_SAMPLE_SIZE = int(GRAPH_SAMPLE_WINDOW_SIZE_s * 1000 / GRAPH_DRAW_PERIOD_ms)
 
 TIME_KEY = "time"
@@ -18,9 +17,9 @@ CPU_THERMAL_KEY = "cpu temp (°c)"
 MEM_THERMAL_KEY = "lpddr5 temp (°c)"
 GPU_THERMAL_KEY = "gpu temp (°c)"
 
+# Triadic colors, indexed on Tria pink
 TRIA_PINK_RGBH = (0xFE, 0x00, 0xA2)
-TRIA_BLUE_RGBH = (0x00, 0x19, 0x4F)
-TRIA_WHITE_RGBH = (0xFF, 0xFF, 0xFF)
+TRIA_BLUE_RGBH = (0x00, 0xA2, 0xFE)
 TRIA_YELLOW_RGBH = (0xFE, 0xDB, 0x00)
 
 # WARN: These commands will be processed by application. Tags like <TAG> are likely placeholder
