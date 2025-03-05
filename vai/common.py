@@ -35,9 +35,9 @@ CAMERA = f"<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,widt
 POSE_DETECTION = "<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! \
 tee name=split \
 split. ! queue ! qtivcomposer name=mixer ! <SINGLE_DISPLAY> \
-split. ! queue ! qtimlvconverter ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=QNNExternalDelegate,backend_type=htp; \
+split. ! queue ! qtimlvconverter ! qtimltflite delegate=external external-delegate-path=libQnnTFLiteDelegate.so external-delegate-options=\"QNNExternalDelegate,backend_type=htp;\" \
 model=/opt/posenet_mobilenet_v1.tflite ! qtimlvpose threshold=51.0 results=2 module=posenet labels=/opt/posenet_mobilenet_v1.labels \
-constants=Posenet,q-offsets=<128.0,128.0,117.0>,q-scales=<0.0784313753247261,0.0784313753247261,1.3875764608383179>; ! video/x-raw,format=BGRA,width=640,height=480 ! mixer."
+constants=\"Posenet,q-offsets=<128.0,128.0,117.0>,q-scales=<0.0784313753247261,0.0784313753247261,1.3875764608383179>;\" ! video/x-raw,format=BGRA,width=640,height=480 ! mixer."
 
 CLASSIFICATION = '<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! \
 tee name=split \
@@ -55,8 +55,8 @@ DEPTH_SEGMENTATION = "<DATA_SRC> ! qtivtransform ! \
     video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc ! \
     tee name=split \
     split. ! queue ! qtivcomposer background=0 name=dual \
-        sink_0::position=<0,0> sink_0::dimensions=<960,720> \
-        sink_1::position=<960,0> sink_1::dimensions=<960,720> \
+        sink_0::position=\<0,0\> sink_0::dimensions=\<960,720\> \
+        sink_1::position=\<960,0\> sink_1::dimensions=\<960,720\> \
     ! queue ! <DUAL_DISPLAY> \
     split. ! queue ! qtimlvconverter ! queue ! \
         qtimltflite delegate=external \
@@ -64,7 +64,7 @@ DEPTH_SEGMENTATION = "<DATA_SRC> ! qtivtransform ! \
             external-delegate-options=QNNExternalDelegate,backend_type=htp \
             model=/opt/Midas-V2-Quantized.tflite ! queue ! \
         qtimlvsegmentation module=midas-v2 labels=/opt/monodepth.labels \
-            constants=Midas,q-offsets=<0.0>,q-scales=<4.716535568237305>; ! \
+            constants=\"Midas,q-offsets=<0.0>,q-scales=<4.716535568237305>;\" ! \
         video/x-raw,width=960,height=720 ! queue ! dual.sink_1"
 
 SEGMENTATION = '<DATA_SRC> ! qtivtransform ! video/x-raw(memory:GBM),format=NV12,width=640,height=480,framerate=30/1,compression=ubwc !queue ! tee name=split \

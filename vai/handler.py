@@ -310,8 +310,10 @@ class Handler:
 
         if kill0 and self.demoProcess0 is not None:
             self.demoProcess0.close()
+            self.demoProcess0 = None
         if kill1 and self.demoProcess1 is not None:
             self.demoProcess1.close()
+            self.demoProcess1 = None
         sleep(1)
 
     def demo0_selection_changed_cb(self, combo):
@@ -321,7 +323,7 @@ class Handler:
         if index == 0:
             self.demoProcess0 = None
         else:
-            self.demoProcess0 = GstPipeline(self.getCommand(index, 0))
+            self.demoProcess0 = GstPipeline(self.getCommand(index, 0), 'process0')
             self.demoProcess0.start()
 
     def demo1_selection_changed_cb(self, combo):
@@ -331,7 +333,7 @@ class Handler:
         if index == 0:
             self.demoProcess1 = None
         else:
-            self.demoProcess1 = GstPipeline(self.getCommand(index, 1))
+            self.demoProcess1 = GstPipeline(self.getCommand(index, 1), 'process1')
             self.demoProcess1.start()
 
     def IdleUpdateLabels(self, label, text):
