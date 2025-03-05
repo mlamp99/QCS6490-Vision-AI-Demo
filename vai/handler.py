@@ -137,6 +137,7 @@ class Handler:
 
     def update_temps(self):
         cpu_temp, gpu_temp, mem_temp = get_cpu_gpu_mem_temps()
+
         self.sample_data[CPU_THERMAL_KEY] = cpu_temp
         if cpu_temp is not None:
             GLib.idle_add(

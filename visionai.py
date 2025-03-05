@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import collections
-import math
 import os
 import threading
 import time
@@ -11,8 +10,9 @@ import gi
 from vai.common import (APP_HEADER, CPU_THERMAL_KEY, CPU_UTIL_KEY,
                         GPU_THERMAL_KEY, GPU_UTIL_KEY, GRAPH_SAMPLE_SIZE,
                         MEM_THERMAL_KEY, MEM_UTIL_KEY, TIME_KEY, TRIA,
-                        TRIA_PINK_RGBH, TRIA_WHITE_RGBH, TRIA_YELLOW_RGBH,
-                        GRAPH_SAMPLE_WINDOW_SIZE_s, AUTOMATIC_DEMO_SWITCH_s)
+                        TRIA_BLUE_RGBH, TRIA_PINK_RGBH, TRIA_YELLOW_RGBH,
+                        AUTOMATIC_DEMO_SWITCH_s, GRAPH_SAMPLE_WINDOW_SIZE_s,
+                        get_ema)
 from vai.graphing import (draw_axes_and_labels,
                           draw_graph_background_and_border, draw_graph_data)
 from vai.handler import Handler
@@ -31,39 +31,59 @@ from vai.qprofile import QProfProcess
 gi.require_version("Gdk", "3.0")
 gi.require_version("Gst", "1.0")
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gst, Gtk, GLib
+from gi.repository import Gdk, GLib, Gst, Gtk
+
+# --- Graphing constants ---
 
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 THERMAL_GRAPH_COLORS_RGBF = {
     CPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 UTIL_GRAPH_COLORS_RGBF = {
     CPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_UTIL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_UTIL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 THERMAL_GRAPH_COLORS_RGBF = {
     CPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_PINK_RGBH),
-    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_WHITE_RGBH),
+    MEM_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_BLUE_RGBH),
     GPU_THERMAL_KEY: tuple(c / 255.0 for c in TRIA_YELLOW_RGBH),
 }
 
 GRAPH_LABEL_FONT_SIZE = 14
+MAX_TIME_DISPLAYED = 0
+MIN_TEMP_DISPLAYED = 35
+MAX_TEMP_DISPLAYED = 95
+MIN_UTIL_DISPLAYED = 0
+MAX_UTIL_DISPLAYED = 100
+
+# --- End Graphing constants ---
 
 GladeBuilder = Gtk.Builder()
 APP_FOLDER = os.path.dirname(__file__)
 RESOURCE_FOLDER = os.path.join(APP_FOLDER, "resources")
 LAYOUT_PATH = os.path.join(RESOURCE_FOLDER, "GSTLauncher.glade")
 
+def get_min_time_delta_smoothed(time_series: list):
+    """Returns the delta from the current time to the first entry in the time series. If the time series is empty, returns 0."""
+    if not time_series: return 0
+
+    x_min = -int(time.monotonic() - time_series[0])
+
+    # Help with the jittering of the graph
+    if abs(x_min - GRAPH_SAMPLE_WINDOW_SIZE_s) <= 1:
+        x_min = -GRAPH_SAMPLE_WINDOW_SIZE_s
+
+    return x_min
 
 class VaiDemoManager:
     def __init__(self, port=7001):
@@ -145,9 +165,23 @@ class VaiDemoManager:
             self.init_graph_data()
 
         self.util_data[TIME_KEY].append(time.monotonic())
-        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
-        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
-        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
+
+        # Sample and smooth the data with exponential smoothing
+        cur_cpu = self.eventHandler.sample_data[CPU_UTIL_KEY]
+        cur_gpu = self.eventHandler.sample_data[GPU_UTIL_KEY]
+        cur_mem = self.eventHandler.sample_data[MEM_UTIL_KEY]
+
+        last_cpu = self.util_data[CPU_UTIL_KEY][-1] if self.util_data[CPU_UTIL_KEY] else cur_cpu
+        last_gpu = self.util_data[GPU_UTIL_KEY][-1] if self.util_data[GPU_UTIL_KEY] else cur_gpu
+        last_mem = self.util_data[MEM_UTIL_KEY][-1] if self.util_data[MEM_UTIL_KEY] else cur_mem
+
+        ema_cpu = get_ema(cur_cpu, last_cpu)
+        ema_gpu = get_ema(cur_gpu, last_gpu)
+        ema_mem = get_ema(cur_mem, last_mem)
+
+        self.util_data[CPU_UTIL_KEY].append(ema_cpu)
+        self.util_data[GPU_UTIL_KEY].append(ema_gpu)
+        self.util_data[MEM_UTIL_KEY].append(ema_mem)
 
         cur_time = time.monotonic()
         while (
@@ -158,6 +192,9 @@ class VaiDemoManager:
             self.util_data[CPU_UTIL_KEY].popleft()
             self.util_data[GPU_UTIL_KEY].popleft()
             self.util_data[MEM_UTIL_KEY].popleft()
+
+
+
 
     def on_util_graph_draw(self, widget, cr):
         """Draw the util graph on the draw area"""
@@ -171,18 +208,11 @@ class VaiDemoManager:
             width, height, cr, res_tuple=self.main_window_dims
         )
 
-        # TODO: Can move dynamic limits into the graphing api
-        x_min = (
-            -int(time.monotonic() - self.util_data[TIME_KEY][0])
-            if self.util_data[TIME_KEY]
-            else 0
-        )
-        # Help with the jittering of the graph
-        if abs(x_min - GRAPH_SAMPLE_WINDOW_SIZE_s) <= 1:
-            x_min = -GRAPH_SAMPLE_WINDOW_SIZE_s
+        x_min = get_min_time_delta_smoothed(self.util_data[TIME_KEY])
 
-        x_lim = (x_min, 0)
-        y_lim = (0, 100)
+        x_lim = (x_min, MAX_TIME_DISPLAYED)
+        y_lim = (MIN_UTIL_DISPLAYED, MAX_UTIL_DISPLAYED)
+
         x_axis, y_axis = draw_axes_and_labels(
             cr,
             width,
@@ -202,7 +232,8 @@ class VaiDemoManager:
             x_axis,
             y_axis,
             cr,
-            y_lim=(0, 100),
+            y_lim=y_lim,
+            res_tuple=self.main_window_dims,
         )
 
         self.eventHandler.GraphDrawAreaTop.queue_draw()
@@ -215,14 +246,28 @@ class VaiDemoManager:
             self.init_graph_data()
 
         self.thermal_data[TIME_KEY].append(time.monotonic())
+
+        # Sample and smooth the data with exponential smoothing
+        cur_cpu = self.eventHandler.sample_data[CPU_THERMAL_KEY]
+        cur_gpu = self.eventHandler.sample_data[GPU_THERMAL_KEY]
+        cur_mem = self.eventHandler.sample_data[MEM_THERMAL_KEY]
+
+        last_cpu = self.thermal_data[CPU_THERMAL_KEY][-1] if self.thermal_data[CPU_THERMAL_KEY] else cur_cpu
+        last_gpu = self.thermal_data[GPU_THERMAL_KEY][-1] if self.thermal_data[GPU_THERMAL_KEY] else cur_gpu
+        last_mem = self.thermal_data[MEM_THERMAL_KEY][-1] if self.thermal_data[MEM_THERMAL_KEY] else cur_mem
+
+        ema_cpu = get_ema(cur_cpu, last_cpu)
+        ema_gpu = get_ema(cur_gpu, last_gpu)
+        ema_mem = get_ema(cur_mem, last_mem)
+
         self.thermal_data[CPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[CPU_THERMAL_KEY]
+            ema_cpu
         )
         self.thermal_data[GPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[GPU_THERMAL_KEY]
+            ema_gpu
         )
         self.thermal_data[MEM_THERMAL_KEY].append(
-            self.eventHandler.sample_data[MEM_THERMAL_KEY]
+            ema_mem
         )
 
         cur_time = time.monotonic()
@@ -246,13 +291,10 @@ class VaiDemoManager:
         draw_graph_background_and_border(
             width, height, cr, res_tuple=self.main_window_dims
         )
-        x_min = (
-            -int(time.monotonic() - self.thermal_data[TIME_KEY][0])
-            if self.thermal_data[TIME_KEY]
-            else 0
-        )
-        x_lim = (x_min, 0)
-        y_lim = (30, 115)
+        x_min = get_min_time_delta_smoothed(self.thermal_data[TIME_KEY])
+        x_lim = (x_min, MAX_TIME_DISPLAYED)
+        y_lim = (MIN_TEMP_DISPLAYED, MAX_TEMP_DISPLAYED)
+
         x_axis, y_axis = draw_axes_and_labels(
             cr,
             width,
@@ -276,28 +318,6 @@ class VaiDemoManager:
             res_tuple=self.main_window_dims,
         )
 
-        self.eventHandler.GraphDrawAreaBottom.queue_draw()
-        return True
-
-    def update_graph(self):
-        """Update the graph values for real-time rendering"""
-        if self.util_data is None:  # Graph data not initialized
-            return True
-
-        self.util_data[CPU_UTIL_KEY].append(self.eventHandler.sample_data[CPU_UTIL_KEY])
-        self.util_data[GPU_UTIL_KEY].append(self.eventHandler.sample_data[GPU_UTIL_KEY])
-        self.util_data[MEM_UTIL_KEY].append(self.eventHandler.sample_data[MEM_UTIL_KEY])
-        self.thermal_data[CPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[CPU_THERMAL_KEY]
-        )
-        self.thermal_data[GPU_THERMAL_KEY].append(
-            self.eventHandler.sample_data[GPU_THERMAL_KEY]
-        )
-        self.thermal_data[MEM_THERMAL_KEY].append(
-            self.eventHandler.sample_data[MEM_THERMAL_KEY]
-        )
-        # Request a redraw
-        self.eventHandler.GraphDrawAreaTop.queue_draw()
         self.eventHandler.GraphDrawAreaBottom.queue_draw()
         return True
 
