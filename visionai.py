@@ -322,14 +322,14 @@ class VaiDemoManager:
         return True
 
     def automateDemo(self):
-        if (self.eventHandler.demoProcess0 is not None) and (self.demoSelection0Cnt > 0):
+        if (self.eventHandler.CycleDemo0) and (self.demoSelection0Cnt > 0):
             cycleDemo0 = True
         else:
             cycleDemo0 = False
             self.demo0Interval = 0
             self.demo0RunningIndex = 1
 
-        if (self.eventHandler.demoProcess1 is not None) and (self.demoSelection1Cnt > 0):
+        if (self.eventHandler.CycleDemo1) and (self.demoSelection1Cnt > 0):
             cycleDemo1 = True
         else:
             cycleDemo1 = False

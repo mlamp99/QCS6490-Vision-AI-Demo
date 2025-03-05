@@ -72,6 +72,8 @@ class Handler:
         self.USBCameras = []
         self.dualDemoRunning0 = False
         self.dualDemoRunning1 = False
+        self.CycleDemo0 = False
+        self.CycleDemo1 = False
 
         # TODO: protect with sync primitive?
         self.sample_data = {
@@ -322,7 +324,9 @@ class Handler:
         index = combo.get_active()
         if index == 0:
             self.demoProcess0 = None
+            self.CycleDemo0 = False
         else:
+            self.CycleDemo0 = True
             self.demoProcess0 = GstPipeline(self.getCommand(index, 0), 'process0')
             self.demoProcess0.start()
 
@@ -332,7 +336,9 @@ class Handler:
         index = combo.get_active()
         if index == 0:
             self.demoProcess1 = None
+            self.CycleDemo1 = False
         else:
+            self.CycleDemo1 = True
             self.demoProcess1 = GstPipeline(self.getCommand(index, 1), 'process1')
             self.demoProcess1.start()
 
