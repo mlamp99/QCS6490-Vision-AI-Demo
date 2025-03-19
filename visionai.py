@@ -450,6 +450,10 @@ class VaiDemoManager:
 
         self.eventHandler.QProf.start()
 
+        settings = Gtk.Settings.get_default()
+        settings.set_property("gtk-cursor-theme-name","Yaru")
+        settings.set_property("gtk-cursor-theme-size", 64)
+
         Gtk.main()
 
 
