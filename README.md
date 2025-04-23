@@ -1,26 +1,77 @@
-![image](https://github.com/user-attachments/assets/7117af53-3e5a-4fbb-9638-94e3e513269e)
-# Multi-Stream Vision-AI Reference Design
-
-This reference design showcases the multi-camera, multi-model AI capabilities on the Tria VisionAI-Kit 6490.
+  ![image](https://github.com/user-attachments/assets/7117af53-3e5a-4fbb-9638-94e3e513269e)
+# 🔍 Multi-Stream Vision-AI Reference Design
+**Powered by Qualcomm Hexagon AI Engine**  
+**License: MIT**
 
 ![vai_sample1_wave_edited](https://github.com/user-attachments/assets/8f4f451c-39e9-40a5-98fb-a428ed6d7152)
 
-## How it works
+## Overview
 
-This design is still in active development, but here is a high-level look of what it offers.
+This reference design demonstrates a **multi-camera, multi-model AI pipeline** using the **Tria VisionAI-Kit 6490**. Built with **Python, GTK, and GStreamer**, this GUI-based application allows users to:
 
-![Slide9](https://github.com/user-attachments/assets/c1c6d54a-7cb9-438e-8bd9-0e5b8588bf13)
+- 🔄 Run **up to two AI models concurrently** on separate camera inputs  
+- 🎥 Stream live camera feeds with overlays from selected AI models  
+- 📊 Visualize **real-time system performance and thermal metrics**  
+- 🚀 Leverage Qualcomm’s **Hexagon DSP AI Engine** for efficient, low-power inference  
 
+Currently supported ML pipelines include:
+- Pose Detection  
+- Depth Segmentation  
+- Object Detection  
+- Image Classification
 
-## Equipment List, as seen at Embedded World 2025
+With potential for more!
 
-Running the demo doesn't require much; here's how we powered our design at Embedded World 2025!
+---
 
-![Slide8](https://github.com/user-attachments/assets/34cb25cc-2648-46ce-92db-623024d78d81)
+## 📈 System Monitoring
 
+The design integrates two utilities for performance monitoring:
+- **QProf** (Qualcomm's common Linux profiler)  
+- **psutil** (a cross-platform system utility)  
 
-## Vision-AI Kit HW Notes
+### Live Metrics:
+- CPU / Memory / GPU utilization  
+- LPDDR5, CPU, and GPU temperature graphs  
+- Track last N seconds (N=30 by default)
 
-Vision-AI Kit 6490 is still in pre-production, but the following is what you would expect in your purchase. **Disclaimer**: this is subject to change.
+## How it works / Design Overview
 
-![Slide7](https://github.com/user-attachments/assets/8eca6561-6d67-4b09-b142-41cce7c09ac5)
+![System Overview](https://github.com/user-attachments/assets/c1c6d54a-7cb9-438e-8bd9-0e5b8588bf13)
+
+---
+
+## 🧰 Equipment List (As seen at Embedded World 2025)
+
+Here’s the demo setup we showcased at Embedded World 2025:
+
+![Equipment List](https://github.com/user-attachments/assets/34cb25cc-2648-46ce-92db-623024d78d81)
+
+---
+
+## 🔌 Hardware Notes
+
+The **VisionAI-Kit 6490** is a platform designed for edge-AI (multi) camera applications. Key features include:
+
+- Qualcomm QCS6490 SoC  
+- Up to 4 MIPI camera inputs  
+- Integrated Hexagon AI Engine  
+- 8 GB LPDDR5 memory 
+
+> ⚠️ *Note: although unlikely, HW could still be subject to change*
+
+![Hardware Diagram](https://github.com/user-attachments/assets/8eca6561-6d67-4b09-b142-41cce7c09ac5)
+
+---
+
+## 🚧 Development Status
+
+This project is actively maintained. Contributions, feedback, and issue reports are welcome!
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+![vai_sample1_wave_edited](https://github.com/user-attachments/assets/8f4f451c-39e9-40a5-98fb-a428ed6d7152)
