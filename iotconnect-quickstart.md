@@ -5,7 +5,6 @@
 * [Introduction](#introduction)
 * [Prerequisites](#prerequisites)
 * [Cloud Account & Device Template Setup](#cloud-account--device-template-setup)
-* [Project Layout](#project-layout)
 * [Device Setup & Certificate Provisioning](#device-setup--certificate-provisioning)
 * [Download Device Configuration](#download-device-configuration)
 * [Run Quickstart to Connect Device](#run-quickstart-to-connect-device)
@@ -28,10 +27,10 @@
 This Quickstart guide walks you through:
 
 1. Importing the **TRIA Vision AI Kit 6490** Device Template (provided in this repository).
-2. Creating a Device in /IOTCONNECT using that template, and entering your device certificate.
-3. Downloading the Device Configuration JSON from /IOTCONNECT.
-4. Running the Quickstart script (`quickstart.py`) on the Vision AI Kit to register/connect the device.
-5. Placing the resulting certificate and config files into `iotc_config/` so that `visionai-iotc.py` can use them.
+2. Running the Quickstart script (`quickstart.py`) on the Vision AI Kit to generate device certificates and register/connect the device.
+3. Creating a Device in /IOTCONNECT using that template, and pasting the generated certificate + private key PEM text into the portal.
+4. Downloading the Device Configuration JSON from /IOTCONNECT.
+5. Placing the certificate, private key, and JSON into `iotc_config/` so that `visionai-iotc.py` can use them.
 6. Launching the Vision AI demo, which sends telemetry and accepts commands via /IOTCONNECT.
 
 ---
@@ -69,6 +68,8 @@ We’ve already defined a complete template JSON in this repository. It includes
 
 Use the file in [`iotconnect/tria_6490_device_template.JSON`](iotconnect/tria_6490_device_template.JSON).
 
+> **Important**: Do not modify this file unless you need to add/remove telemetry fields or commands. If you do edit it, re-import it under a new Template Code.
+
 #### 2. Import the TRIA Template into /IOTCONNECT
 
 1. **Log in** to your /IOTCONNECT portal (AWS or Azure version).
@@ -99,158 +100,9 @@ Use the file in [`iotconnect/tria_6490_device_template.JSON`](iotconnect/tria_64
 
 ---
 
-## Project Layout
-
-Your local project structure should now look like this (on your host machine after cloning or downloading):
-
-```
-QCS6490-Vision-AI-Demo  <-- your project root
-├── visionai.py
-├── visionai-iotc.py
-├── launch_visionai_with_env.sh
-├── iotc_config/              ← will hold certificate and JSON
-│   └── quickstart.sh         ← (downloads & runs quickstart.py)
-├── iotconnect/
-│   ├── images/               ← contains the screenshots below
-│   │   ├── select_template.png
-│   │   ├── create_template.png
-│   │   ├── select_import_template.png
-│   │   ├── enter_device_cert.png
-│   │   └── download_device_config.png
-│   ├── tria_6490_device_template.JSON
-│   └── iotconnect-quickstart.md   ← (this file)
-└── README.md
-```
-
-**Important**:
-`visionai-iotc.py` looks specifically in `iotc_config/` for these three files:
-
-```python
-DeviceConfig.from_iotc_device_config_json_file(
-    device_config_json_path="iotc_config/iotcDeviceConfig.json",
-    device_cert_path="iotc_config/device-cert.pem",
-    device_pkey_path="iotc_config/device-pkey.pem"
-)
-```
-
-So **before** running the IoTConnect variant of the demo, you must have in `iotc_config/`:
-
-```
-device-cert.pem
-device-pkey.pem
-iotcDeviceConfig.json
-```
-
----
-
 ## Device Setup & Certificate Provisioning
 
-You must create your Device in /IOTCONNECT **and** provide a device certificate. You have these options for provisioning:
-
-* **Option 1: Use your own existing certificate/key pair**
-* **Option 2: Let /IOTCONNECT generate a certificate/key pair**
-
-> **Note**: Whichever option you choose, you will need to place the PEM-encoded certificate text (and corresponding private key) into the Device Creation form, then click **Save & View**. After saving, you will download the Device Configuration (JSON) containing the IoTConnect endpoint details.
-
-Below is how to proceed with either option:
-
-#### 1. Open the “Create Device” form
-
-1. In the /IOTCONNECT portal, navigate to **Devices → Devices**.
-
-2. Click **Create Device** (top-right).
-
-   ![Create Device Form](iotconnect/images/enter_device_cert.png)
-
-3. Fill out the form:
-
-   * **Unique Id**: A short, unique identifier (e.g. `QCS6490-01`).
-   * **Device Name**: e.g. `QCS6490-VisionAI-Kit`.
-   * **Entity**: Select your Entity (e.g. `Avnet`).
-   * **Template**: Choose `TRIA Vision AI Kit 6490` (the template you imported).
-
-4. Under **Device certificate**, choose **Use my certificate** (we will paste PEM text).
-
-   * If you already have a certificate/key pair (Option 1), click **Browse** next to “Device Certificate” and upload your `device-cert.pem`.
-   * If you want /IOTCONNECT to generate them (Option 2), click **Browse** anyway and upload a placeholder file, or simply paste a minimal PEM header (e.g. `-----BEGIN CERTIFICATE-----\n...`).
-
-5. Under **Certificate Authority**, select the CA that issued your certificate (for Option 1). If you let /IOTCONNECT generate (Option 2), pick the default CA listed.
-
-6. In the large **Certificate Text** box, paste the **PEM-encoded certificate** (the entire contents of `device-cert.pem`).
-
-   > **Important**: If you let /IOTCONNECT generate certificates, you will retrieve the newly issued certificate later via Quickstart. In that case, paste the generated PEM text here.
-
-7. In **Notes**, optionally add `Vision AI Demo – QCS6490`.
-
-8. Click **Save & View**.
-
----
-
-## Download Device Configuration
-
-Once you click **Save & View**, you’ll be taken to the Device Info page. Now you need to download the **Device Configuration** (JSON):
-
-1. On the Device Info page, click the **Download Device Configuration** icon (raw JSON icon).
-
-   ![Download Device Configuration](iotconnect/images/download_device_config.png)
-
-2. A window will pop up displaying the **raw JSON** (you will also get a ZIP if you had auto-generated certs). The JSON looks similar to:
-
-   ```json
-   {
-     "ver": "2.1",
-     "pf": "aws",
-     "cpid": "------------------------------",
-     "env": "poc",
-     "uid": "QCS6490-01",
-     "did": "QCS6490-01",
-     "at": 3,
-     "disc": "https://awsdiscovery.iotconnect.io"
-   }
-   ```
-
-3. **Copy** the entire JSON text and save it into a local file called `iotcDeviceConfig.json` under your `iotc_config/` folder:
-
-   ```bash
-   mkdir -p iotc_config
-   cat <<EOF > iotc_config/iotcDeviceConfig.json
-   {  <paste the JSON here>  }
-   EOF
-   ```
-
-4. If you already have a PEM certificate (Option 1), also copy your `device-cert.pem` and `device-pkey.pem` into `iotc_config/`:
-
-   ```bash
-   cp /path/to/your/device-cert.pem /path/to/your/device-pkey.pem iotc_config/
-   chmod 644 iotc_config/device-cert.pem iotc_config/device-pkey.pem iotc_config/iotcDeviceConfig.json
-   ```
-
-5. If you selected **Option 2** (have /IOTCONNECT generate certs), you should have downloaded a ZIP containing `device-cert.pem`, `device-pkey.pem`, and `iotcDeviceConfig.json`.
-
-   * **Unzip** those files into `iotc_config/` and set permissions:
-
-     ```bash
-     unzip ~/Downloads/QCS6490-01_iotc_config.zip -d /path/to/QCS6490-Vision-AI-Demo/iotc_config/
-     chmod 644 iotc_config/device-cert.pem iotc_config/device-pkey.pem iotc_config/iotcDeviceConfig.json
-     ```
-
-At this point, you have in `iotc_config/`:
-
-```
-device-cert.pem
-
-device-pkey.pem
-
-iotcDeviceConfig.json
-```
-
-The certificate and JSON are now ready for the demonstration.
-
----
-
-## Run Quickstart to Connect Device
-
-Next, you must register/connect the Vision AI Kit with /IOTCONNECT so it can send telemetry. We provide a **Quickstart** script that uses these three files to establish an MQTT connection.
+Instead of manually generating certificates ahead of time, we’ll use the Quickstart flow to have /IOTCONNECT generate a certificate + private key. These will be used when creating the device in the portal.
 
 1. **Ensure ADB is running** and the Vision AI Kit is connected over USB. On your host, verify:
 
@@ -260,29 +112,32 @@ Next, you must register/connect the Vision AI Kit with /IOTCONNECT so it can sen
 
    You should see a device ID corresponding to your Vision AI Kit.
 
-2. **Copy `quickstart.sh` into `iotc_config/`** (it’s already included in this repo).
+2. **Create an `iotc_config/` folder** in your project (if not already present):
+
+   ```bash
+   mkdir -p iotc_config
+   ```
+
+3. **Copy `quickstart.sh` into `iotc_config/`** (it’s already included in this repo):
 
    ```bash
    cp iotc_config/quickstart.sh iotc_config/
    chmod +x iotc_config/quickstart.sh
    ```
 
-3. **Push the certificate and JSON files to the device** via ADB, so `quickstart.py` can access them locally:
+4. **Push the Quickstart scripts to the device** via ADB:
 
    ```bash
-   adb push iotc_config/device-cert.pem /data/local/tmp/
-   adb push iotc_config/device-pkey.pem /data/local/tmp/
-   adb push iotc_config/iotcDeviceConfig.json /data/local/tmp/
    adb push iotc_config/quickstart.sh /data/local/tmp/
    ```
 
-4. **Open a shell on the Vision AI Kit**:
+5. **Open a shell on the Vision AI Kit**:
 
    ```bash
    adb shell
    ```
 
-5. **Install the Lite SDK** on-device (if not already installed):
+6. **Install the Lite SDK** on-device (if not already installed):
 
    ```bash
    python3 -m pip install iotconnect-sdk-lite
@@ -290,7 +145,7 @@ Next, you must register/connect the Vision AI Kit with /IOTCONNECT so it can sen
 
    If Python/pip is not available, refer to your device’s documentation to enable the Python environment.
 
-6. **Run the Quickstart script** on-device:
+7. **Run the Quickstart script** on-device:
 
    ```bash
    cd /data/local/tmp
@@ -298,64 +153,154 @@ Next, you must register/connect the Vision AI Kit with /IOTCONNECT so it can sen
    ```
 
    * The script will download `quickstart.py` to the same folder.
-   * At the end, it will prompt:
+   * At the end, it will prompt you to run:
 
      ```
-     The Quickstart setup is complete.
-     You can now run this command on the command line to execute the Quickstart demo:
      python3 quickstart.py
      ```
 
-7. **Execute `quickstart.py`** on-device:
+8. **Execute `quickstart.py`** on-device:
 
    ```bash
    python3 quickstart.py
    ```
 
-   * You should see output indicating MQTT connection success, e.g.:
+   * You should see output indicating MQTT connection success, e.g.
 
      ```
      Connected. Reason Code: Success
      MQTT connected (ClientID: QCS6490-01)
      > {"d":[{"d":{"sdk_version":"1.0.2","version":"1.0.0","random":29}}]}
      ```
+   * At this point, the script will generate:
 
-8. **Exit ADB shell** when done:
+     * `device-cert.pem`
+     * `device-pkey.pem`
+     * `iotcDeviceConfig.json`
+   * Push these files back to your host:
 
-   ```bash
-   exit
-   ```
+     ```bash
+     adb pull /data/local/tmp/device-cert.pem iotc_config/
+     adb pull /data/local/tmp/device-pkey.pem iotc_config/
+     adb pull /data/local/tmp/iotcDeviceConfig.json iotc_config/
+     ```
+   * Exit ADB shell:
 
-At this point, your Vision AI Kit is connected to /IOTCONNECT and ready to send telemetry.
+     ```bash
+     exit
+     ```
 
-> **Note**: If you ever need to re-run Quickstart, re-push the three files (`device-cert.pem`, `device-pkey.pem`, `iotcDeviceConfig.json`) via ADB and re-run `quickstart.sh` on-device.
+Now you have in your local `iotc_config/` folder the three files needed:
+
+```
+iotc_config/device-cert.pem
+iotc_config/device-pkey.pem
+iotc_config/iotcDeviceConfig.json
+```
+
+These will be used when creating the device in /IOTCONNECT.
+
+> **Important**: The JSON (`iotcDeviceConfig.json`) contains fields like:
+>
+> ```json
+> {
+>   "ver": "2.1",
+>   "pf": "aws",
+>   "cpid": "------------------------------",
+>   "env": "poc",
+>   "uid": "QCS6490-01",
+>   "did": "QCS6490-01",
+>   "at": 3,
+>   "disc": "https://awsdiscovery.iotconnect.io"
+> }
+> ```
+>
+> Use this JSON and the PEM files in the next step.
+
+---
+
+## Download Device Configuration
+
+Now create the Device in the portal using the certificate you generated.
+
+1. **Log in** to your /IOTCONNECT portal and navigate to **Devices → Devices**.
+
+2. Click **Create Device** (top-right).
+
+   ![Enter Device Certificate](iotconnect/images/enter_device_cert.png)
+
+3. Fill out the form:
+
+   * **Unique Id**: Must match the `uid` from `iotcDeviceConfig.json` (e.g. `QCS6490-01`).
+   * **Device Name**: e.g. `QCS6490-VisionAI-Kit`.
+   * **Entity**: Select your Entity (e.g. `Avnet`).
+   * **Template**: Choose `TRIA Vision AI Kit 6490`.
+
+4. Under **Device certificate**, choose **Use my certificate**.
+
+   * In the **Device Certificate** upload, select `iotc_config/device-cert.pem` from your host.
+   * In the **Certificate Authority** dropdown, select the CA that issued the Quickstart-generated cert.
+   * In the **Certificate Text** box, paste the full contents of `iotc_config/device-cert.pem` (PEM-encoded).
+   * For **Private Key**, select or paste the contents of `iotc_config/device-pkey.pem`.
+
+5. Click **Save & View**.
+
+6. On the Device Info page, click the **Download Device Configuration** icon to get the raw JSON (if needed).
+   ![Download Device Configuration](iotconnect/images/download_device_config.png)
+
+> At this point, the device is registered in /IOTCONNECT and has the correct certificate.
+
+---
+
+## Run Quickstart to Connect Device
+
+If you haven’t already connected with `quickstart.py`, return to the Vision AI Kit and ensure the same three files are present on-device in `/data/local/tmp/`:
+
+```bash
+adb push iotc_config/device-cert.pem /data/local/tmp/
+adb push iotc_config/device-pkey.pem /data/local/tmp/
+adb push iotc_config/iotcDeviceConfig.json /data/local/tmp/
+```
+
+Then re-run:
+
+```bash
+adb shell
+cd /data/local/tmp
+python3 quickstart.py
+exit
+```
+
+This will establish the MQTT connection under the registered device identity.
+
+> **Note**: After running `quickstart.py`, you should see in /IOTCONNECT that the device’s status becomes “Active” (not “Disconnected”).
 
 ---
 
 ## Launch the /IOTCONNECT-Enabled Demo
 
-With the device connected, you can now run the Vision AI demo that streams telemetry and listens for commands.
+With the device connected, run the Vision AI demo on-device so it streams telemetry and listens for commands.
 
-1. **Push the demo code** (if not already on-device) and navigate to its folder:
+1. Push the demo code to the device (if not already):
 
    ```bash
    adb push visionai-iotc.py /data/local/tmp/
    adb push launch_visionai_with_env.sh /data/local/tmp/
-   adb shell
-   cd /data/local/tmp
    ```
 
-2. **Execute the launcher script**:
+2. Open an ADB shell on the Vision AI Kit:
 
    ```bash
+   adb shell
+   cd /data/local/tmp
    chmod +x launch_visionai_with_env.sh
    sudo bash ./launch_visionai_with_env.sh
    ```
 
-   * A 3-second countdown appears. **Press “i”** to select the IoTConnect-enabled demo (`visionai-iotc.py`).
-   * If you don’t press “i”, it defaults to the local demo (`visionai.py`).
+   * During the 3-second countdown, **press “i”** to select `visionai-iotc.py`.
+   * If no key is pressed, it defaults to `visionai.py` (local demo).
 
-3. **Observe output**:
+3. Watch for console output:
 
    ```
    [IOTCONNECT] Connecting to MQTT broker…
@@ -364,7 +309,7 @@ With the device connected, you can now run the Vision AI demo that streams telem
    …
    ```
 
-If you see those lines, your Vision AI Kit is now online with /IOTCONNECT.
+Your Vision AI Kit is now online with /IOTCONNECT.
 
 ---
 
@@ -374,7 +319,7 @@ Once connected, `visionai-iotc.py` sends telemetry every 5 seconds and listens f
 
 ### Telemetry Fields
 
-Every 5 seconds, the demo gathers system metrics and publishes a JSON payload (all numeric):
+Each payload includes these numeric fields:
 
 * **cpu\_usage** – CPU utilization (0 – 100)
 * **gpu\_usage** – GPU utilization (0 – 100)
@@ -481,7 +426,7 @@ After performing its GUI update, the demo sends an acknowledgment back to /IOTCO
 
      * **Status**: `SUCCESS_WITH_ACK`
      * **Message**: `"CAM1 started 2"`
-  7. The GUI dropdown for Camera 1 switches to demo #2.
+  7. The GUI dropdown for Camera 1 switches to demo #2.
 
 #### stop\_demo `<camera>`
 
@@ -529,7 +474,7 @@ After performing its GUI update, the demo sends an acknowledgment back to /IOTCO
 
      * **Status**: `SUCCESS_WITH_ACK`
      * **Message**: `"CAM2 demo stopped"`
-  7. The GUI dropdown for Camera 2 reverts to index 0 (“Off”).
+  7. The GUI dropdown for Camera 2 reverts to index 0 (“Off”).
 
 > **Under the hood**:
 >
@@ -551,7 +496,7 @@ After performing its GUI update, the demo sends an acknowledgment back to /IOTCO
 
 1. **Confirm telemetry**:
 
-   * In /IOTCONNECT portal, go to **Devices → Telemetry**, select your device. You should see a JSON record appear every 5 seconds containing the fields above.
+   * In /IOTCONNECT portal, go to **Devices → Telemetry**, select your device. You should see a JSON record appear every 5 seconds containing the fields above.
    * If you don’t see any telemetry:
 
      * Verify the device’s **Status** under **Devices → Devices** is “Active” (not “Disconnected”).
@@ -584,23 +529,24 @@ After performing its GUI update, the demo sends an acknowledgment back to /IOTCO
    ```
 
 4. **Stopping a running demo**:
-   Issue `stop_demo` with `["cam1"]` or `["cam2"]` to set that camera’s dropdown back to 0 (“Off”).
+   Issue `stop_demo` with `["cam1"]` or `["cam2"]` to set that camera’s dropdown back to 0 (“Off”).
 
 ---
 
 ## Summary
 
 * **Template**: We provided `iotconnect/tria_6490_device_template.JSON` in this repo. Import it under **Devices → Templates** as `TRIA Vision AI Kit 6490`.
-* **Device Creation & Certificate**: In /IOTCONNECT → **Devices → Devices** → **Create Device**, fill out the form, choose **Use my certificate**, paste your PEM-encoded certificate (or a placeholder for generation), then **Save & View**.
-* **Download Configuration**: On the Device Info page, click **Download Device Configuration**, copy the raw JSON into `iotc_config/iotcDeviceConfig.json`, and ensure `device-cert.pem` & `device-pkey.pem` are also in `iotc_config/`.
-* **Connect Device**: Use `adb` from your PC to push those three files to `/data/local/tmp/` on the Vision AI Kit, then run `quickstart.sh` and `quickstart.py` on-device to establish the MQTT connection.
-* **Launch Demo**: `sudo bash ./launch_visionai_with_env.sh` on-device, press “i” within 3 seconds to pick `visionai-iotc.py`.
+* **Certificate Generation & Device Registration**: Run `quickstart.sh` on-device to generate `device-cert.pem`, `device-pkey.pem`, and `iotcDeviceConfig.json`.
+* **Device Creation**: In /IOTCONNECT → **Devices → Devices** → **Create Device**, fill out form, choose **Use my certificate**, and paste/upload the generated PEMs.
+* **Device Configuration**: Download the raw JSON if needed.
+* **Connect Device**: Push the three files to-device and re-run `quickstart.py` to ensure MQTT connection.
+* **Launch Demo**: Run `sudo bash ./launch_visionai_with_env.sh` on-device, press “i” within 3 seconds to pick `visionai-iotc.py`.
 * **Verify**:
 
-  * Under **Devices → Telemetry**, watch for telemetry every 5 seconds.
-  * Under **Devices → Commands**, send `start_demo`/`stop_demo` to switch demos on Camera 1 or 2.
+  * Under **Devices → Telemetry**, watch for telemetry every 5 seconds.
+  * Under **Devices → Commands**, send `start_demo`/`stop_demo` to switch demos on Camera 1 or 2.
 
-Your QCS6490 Vision AI Kit will now connect to /IOTCONNECT automatically, start streaming telemetry, and respond to `start_demo`/`stop_demo` commands.
+Once complete, your QCS6490 Vision AI Kit is fully integrated with /IOTCONNECT, streaming telemetry and responding to commands.
 
 ---
 
