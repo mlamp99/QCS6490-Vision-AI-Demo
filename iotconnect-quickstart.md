@@ -69,8 +69,6 @@ We’ve already defined a complete template JSON in this repository. It includes
 
 Use the file in [`iotconnect/tria_6490_device_template.JSON`](iotconnect/tria_6490_device_template.JSON).
 
-> **Important**: Do not modify this file unless you need to add/remove telemetry fields or commands. If you do edit it, re-import it under a new Template Code.
-
 #### 2. Import the TRIA Template into /IOTCONNECT
 
 1. **Log in** to your /IOTCONNECT portal (AWS or Azure version).
