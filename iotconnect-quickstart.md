@@ -62,11 +62,7 @@ We’ve already defined a complete template JSON in this repository. It includes
 - **Commands**:  
   `start_demo`, `stop_demo`
 
-You can fetch the JSON directly from GitHub (raw link):
-```
-https://raw.githubusercontent.com/mlamp99/QCS6490-Vision-AI-Demo/main/iotconnect/tria_6490_device_template.JSON
-```
-Or simply use the file that’s already in `iotconnect/tria_6490_device_template.JSON` of this repo.
+Simply use the file that’s already in [`iotconnect/tria_6490_device_template.JSON`](iotconnect/tria_6490_device_template.JSON) of this repo.
 
 > **Important**: Do not modify this file unless you need to add/remove telemetry fields or commands. If you do edit it, re‐import it under a new Template Code.
 
@@ -86,7 +82,7 @@ Or simply use the file that’s already in `iotconnect/tria_6490_device_template
 
    ![Select “Import Template”](iotconnect/images/select_import_template.png)
 
-5. **Upload** `tria_6490_device_template.JSON` (either by downloading it first or dragging it from your local clone of this repo).  
+5. **Upload** `tria_6490_device_template.JSON`   
    - Once uploaded, click **Save**.
    - You should now see a new template named **TRIA Vision AI Kit 6490** (or similar) in your template list, with:
      - **Auth Type**: x509
