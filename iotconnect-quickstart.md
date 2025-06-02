@@ -10,13 +10,6 @@
 * [Run Quickstart to Connect Device](#run-quickstart-to-connect-device)
 * [Launch the /IOTCONNECT-Enabled Demo](#launch-the-iotconnect-enabled-demo)
 * [Telemetry & Commands](#telemetry--commands)
-
-  * [Telemetry Fields](#telemetry-fields)
-  * [Supported Commands](#supported-commands)
-
-    * [start\_demo `<camera>` `<pipeline>`](#start_demo-camera-pipeline)
-    * [stop\_demo `<camera>`](#stop_demo-camera)
-  * [How to Use Telemetry & Commands](#how-to-use-telemetry--commands)
 * [Summary](#summary)
 * [Links & References](#links--references)
 
@@ -201,42 +194,6 @@ Each payload includes these numeric fields:
 * **memory\_temp** – Memory temperature (°C or sensor units)
 * **critical** – A fixed threshold (set to 85)
 
-<details>
-<summary>Example telemetry JSON</summary>
-
-```json
-{
-  "cpu_usage": 12.3,
-  "gpu_usage": 7.8,
-  "memory_usage": 45.6,
-  "cpu_temp": 55.0,
-  "gpu_temp": 50.2,
-  "memory_temp": 48.7,
-  "critical": 85
-}
-```
-
-</details>
-
-> Under the hood (from `visionai-iotc.py`):
->
-> ```python
-> telemetry = {
->   "cpu_usage": sample_data.get(CPU_UTIL_KEY, 0),
->   "gpu_usage": sample_data.get(GPU_UTIL_KEY, 0),
->   "memory_usage": sample_data.get(MEM_UTIL_KEY, 0),
->   "cpu_temp": sample_data.get(CPU_THERMAL_KEY, 0),
->   "gpu_temp": sample_data.get(GPU_THERMAL_KEY, 0),
->   "memory_temp": sample_data.get(MEM_THERMAL_KEY, 0),
->   "critical": 85,
-> }
-> self.iotc.send_telemetry(telemetry)
-> ```
-
-> Confirm these under **Devices→Telemetry** in /IOTCONNECT.
-
----
-
 ### Supported Commands
 
 The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs and acknowledges back to /IOTCONNECT.
@@ -248,23 +205,7 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
 
   1. `camera` – `cam1` or `cam2` (case-insensitive)
   2. `pipeline` – string `"1"`–`"6"`
-* **Behavior**:
-
-  ```python
-  camera = command.command_args[0].lower()
-  pipeline = command.command_args[1].lower()
-  mapping = {"1":1, "2":2, "3":3, "4":4, "5":5, "6":6}
-  idx = mapping.get(pipeline)
-  if camera == 'cam1':
-      GLib.idle_add(self.eventHandler.demo_selection0.set_active, idx)
-      msg = f"CAM1 started {pipeline}"
-  elif camera == 'cam2':
-      GLib.idle_add(self.eventHandler.demo_selection1.set_active, idx)
-      msg = f"CAM2 started {pipeline}"
-  else:
-      raise ValueError(f"Invalid camera: {camera}")
-  self.iotc.send_command_ack(command, C2dAck.CMD_SUCCESS_WITH_ACK, msg)
-  ```
+  
 * **Portal Example**:
 
   1. Go to **Devices→Devices**, select device, **Commands→Send Command**.
@@ -283,27 +224,10 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
 #### stop\_demo `<camera>`
 
 * **Purpose**: Stop the demo on a camera (sets dropdown to “Off”).
-* **Arguments**:
-
-  1. `camera` – `cam1` or `cam2`
-* **Behavior**:
-
-  ```python
-  camera = command.command_args[0].lower()
-  if camera == 'cam1':
-      GLib.idle_add(self.eventHandler.demo_selection0.set_active, 0)
-      msg = "CAM1 demo stopped"
-  elif camera == 'cam2':
-      GLib.idle_add(self.eventHandler.demo_selection1.set_active, 0)
-      msg = "CAM2 demo stopped"
-  else:
-      raise ValueError(f"Invalid camera: {camera}")
-  self.iotc.send_command_ack(command, C2dAck.CMD_SUCCESS_WITH_ACK, msg)
-  ```
 * **Portal Example**:
 
   1. **Command name**: `stop_demo`
-  2. **Arguments**: `["cam2"]`
+  2. **Arguments**: `cam2`
   3. **Submit**.
   4. On-device:
 
@@ -313,19 +237,6 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
      CAM2 demo stopped
      ```
   5. **Ack**: `SUCCESS_WITH_ACK`, message `"CAM2 demo stopped"`, GUI resets.
-
-> Under the hood:
->
-> ```python
-> def handle_iotconnect_command(self, command):
->     name = command.command_name
->     if name == 'start_demo': <logic>  
->     elif name == 'stop_demo': <logic>
->     else:
->         self.iotc.send_command_ack(command, C2dAck.CMD_FAILED, "Unknown command")
-> ```
-
----
 
 ### How to Use Telemetry & Commands
 
@@ -365,15 +276,13 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
 
   * Copy generated PEMs, paste into Device Creation form.
   * Copy downloaded JSON, paste back in Quickstart.
-* **Device Creation**: Use the generated `device-cert.pem` and `device-pkey.pem` under **Use my certificate**, then **Save & View**.
+* **Device Creation**: Use the generated `device-cert.pem` under **Use my certificate**, then **Save & View**.
 * **Connect**: Ensure `iotcDeviceConfig.json` is in `iotc_config/` and run Quickstart to activate.
 * **Launch Demo**: Under `/var/rootdirs/opt/QCS6490-Vision-AI-Demo/`, run `sudo bash launch_visionai_with_env.sh`, press “i” for IoTConnect demo.
 * **Verify**:
 
   * Check telemetry in portal.
   * Send `start_demo`/`stop_demo` to control camera demos.
-
-Now your QCS6490 Vision AI Kit is fully integrated with /IOTCONNECT.
 
 ---
 
