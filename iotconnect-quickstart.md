@@ -205,38 +205,13 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
 
   1. `camera` – `cam1` or `cam2` (case-insensitive)
   2. `pipeline` – string `"1"`–`"6"`
-  
-* **Portal Example**:
-
-  1. Go to **Devices→Devices**, select device, **Commands→Send Command**.
-  2. **Command name**: `start_demo`
-  3. **Arguments**: `["cam1","2"]`
-  4. **Submit**.
-  5. On-device:
-
-     ```
-     [IOTCONNECT] Command received: start_demo
-     Received command start_demo ['cam1','2']
-     CAM1 started 2
-     ```
-  6. **Acknowledgment** shows `SUCCESS_WITH_ACK`, message `"CAM1 started 2"`, and GUI updates.
 
 #### stop\_demo `<camera>`
 
 * **Purpose**: Stop the demo on a camera (sets dropdown to “Off”).
-* **Portal Example**:
+* **Arguments**:
 
-  1. **Command name**: `stop_demo`
-  2. **Arguments**: `cam2`
-  3. **Submit**.
-  4. On-device:
-
-     ```
-     [IOTCONNECT] Command received: stop_demo
-     Received command stop_demo ['cam2']
-     CAM2 demo stopped
-     ```
-  5. **Ack**: `SUCCESS_WITH_ACK`, message `"CAM2 demo stopped"`, GUI resets.
+  1. `camera` – `cam1` or `cam2` (case-insensitive)
 
 ### How to Use Telemetry & Commands
 
@@ -248,7 +223,7 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
 2. **Send commands**:
 
    * In **Devices→Devices**, select device, click **Commands→Send Command**.
-   * For `start_demo`, args `["cam1","3"]`; for `stop_demo`, `["cam2"]`.
+   * For `start_demo`, args `cam1 3`; for `stop_demo`, `cam2`.
    * Click **Submit**; check **Acknowledgments** for `SUCCESS_WITH_ACK`.
 
 3. **Pipeline reference**:
@@ -274,11 +249,11 @@ The demo listens for `start_demo` and `stop_demo` commands. On receipt, it logs 
   curl -sOJ 'https://raw.githubusercontent.com/avnet-iotconnect/iotc-python-lite-sdk/refs/heads/main/scripts/quickstart.sh' && bash quickstart.sh
   ```
 
-  * Copy generated PEMs, paste into Device Creation form.
-  * Copy downloaded JSON, paste back in Quickstart.
+  * Copy generated PEMs, paste into Device Creation page in IOTCONNECT.
+  * Copy downloaded JSON, paste back in Quickstart.sh script.
 * **Device Creation**: Use the generated `device-cert.pem` under **Use my certificate**, then **Save & View**.
-* **Connect**: Ensure `iotcDeviceConfig.json` is in `iotc_config/` and run Quickstart to activate.
-* **Launch Demo**: Under `/var/rootdirs/opt/QCS6490-Vision-AI-Demo/`, run `sudo bash launch_visionai_with_env.sh`, press “i” for IoTConnect demo.
+* **Connect**: Ensure `iotcDeviceConfig.json` is in `iotc_config/`.
+* **Launch Demo**: Under `/var/rootdirs/opt/QCS6490-Vision-AI-Demo/`, run `./launch_visionai_with_env.sh`, press “i” for IoTConnect demo.
 * **Verify**:
 
   * Check telemetry in portal.
