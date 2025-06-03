@@ -142,6 +142,7 @@ iotcDeviceConfig.json
 
 ---
 
+
 ## Launch the /IOTCONNECT-Enabled Demo
 
 With the device connected, push and run the demo under `/var/rootdirs/opt/QCS6490-Vision-AI-Demo/`:
@@ -174,7 +175,23 @@ With the device connected, push and run the demo under `/var/rootdirs/opt/QCS649
    …
    ```
 
-Your Vision AI Kit is now streaming telemetry to /IOTCONNECT.
+4. **Import and View the Dashboard**:
+
+   Once connected, you can use the ready-made dashboard to monitor telemetry and interact with the demo.
+
+   * **Import the dashboard**:
+     Navigate to **Dashboard → Import Dashboard** in /IOTCONNECT.
+
+     ![Import Dashboard Location](iotconnect/images/import_dash.PNG)
+
+   * **Use this JSON template**:  
+     [`iotconnect/tria_visionai-kit_dashboard_export.json`](iotconnect/tria_visionai-kit_dashboard_export.json)
+
+   * **Example Dashboard View**:
+
+     ![TRIA 6490 Dashboard](iotconnect/images/tria-4960-dash.PNG)
+
+   This dashboard includes gauges for CPU/GPU/memory telemetry and controls to send demo commands to your device.
 
 ---
 
