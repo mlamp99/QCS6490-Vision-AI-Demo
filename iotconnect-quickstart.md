@@ -49,7 +49,9 @@ This Quickstart guide walks you through:
 
 Before device creation, import the Device Template matching the TRIA Vision AI Kit 6490.
 
-1. **Log in** to your /IOTCONNECT portal (AWS or Azure version).
+1. **Log in** to your /IOTCONNECT portal (AWS or Azure version). 
+
+   Trial subscriptions are available [here](https://github.com/avnet-iotconnect/avnet-iotconnect.github.io/blob/main/documentation/iotconnect/subscription/iotconnect_aws_marketplace.md).
 
 2. Navigate to **Devices → Templates**.
 
